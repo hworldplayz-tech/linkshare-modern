@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    // Collection: users
+    // Document ID: userId (auth.uid)
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (optional)
+    //   - photoURL: string (optional)
+    //   - email: string (required, email format)
+    //   - lastLogin: timestamp (required)
+    //   - groupsCount: number (required)
+    
+    // Collection: groups
+    // Document ID: groupId (auto-generated)
+    // Fields:
+    //   - title: string (required, 1-100 chars)
+    //   - link: string (required, valid URL)
+    //   - category: string (required)
+    //   - country: string (optional)
+    //   - description: string (optional, < 1000 chars)
+    //   - type: string (required, 'group' or 'channel')
+    //   - authorUid: string (required, matches auth.uid)
+    //   - authorName: string (optional)
+    //   - authorEmail: string (optional)
+    //   - imageUrl: string (optional)
+    //   - isFeatured: boolean (optional, default false)
+    //   - status: string (required, 'pending', 'approved', 'rejected')
+    //   - createdAt: timestamp (required)
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "hworldplayz@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // Domain Validators
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'lastLogin', 'groupsCount']) &&
+             isValidEmail(data.email) &&
+             data.lastLogin is timestamp &&
+             data.groupsCount is number;
+    }
+
+    function isValidGroup(data) {
+      return data.keys().hasAll(['title', 'link', 'category', 'type', 'authorUid', 'status', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 100 &&
+             isValidUrl(data.link) &&
+             data.type in ['group', 'channel'] &&
+             data.authorUid == request.auth.uid &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data)) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /countries/{countryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /groups/{groupId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAuthenticated() && isValidGroup(request.resource.data) && 
+                      (request.resource.data.status == 'pending' || (request.resource.data.status == 'approved' && get(/databases/$(database)/documents/settings/main).data.autoApproveGroups == true));
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.authorUid == request.auth.uid && 
+                      request.resource.data.authorUid == resource.data.authorUid &&
+                      request.resource.data.status == resource.data.status && // Cannot approve own group
+                      isValidGroup(request.resource.data));
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.authorUid == request.auth.uid);
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /tips/{tipId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

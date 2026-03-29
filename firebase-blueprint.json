@@ -1,0 +1,114 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "WhatsApp Group or Channel link",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "category": { "type": "string" },
+        "country": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["group", "channel"] },
+        "authorUid": { "type": "string" },
+        "authorName": { "type": "string" },
+        "isFeatured": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "link", "category", "type", "authorUid"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Site-wide configuration and content",
+      "type": "object",
+      "properties": {
+        "siteTitle": { "type": "string" },
+        "siteDescription": { "type": "string" },
+        "headerLogoText": { "type": "string" },
+        "headerMenus": { "type": "array", "items": { "type": "object" } },
+        "heroShow": { "type": "boolean" },
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "autoApproveGroups": { "type": "boolean" },
+        "footerContent": { "type": "object" },
+        "headScripts": { "type": "string" }
+      }
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Group category",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Country": {
+      "title": "Country",
+      "description": "Country for filtering",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "Tip": {
+      "title": "Tip",
+      "description": "WhatsApp Tips & Tricks blog post",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string" },
+        "title": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string" },
+        "date": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "category": { "type": "string" },
+        "author": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slug", "title", "excerpt", "content", "category", "author"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/groups/{groupId}": {
+      "schema": "Group",
+      "description": "WhatsApp groups and channels"
+    },
+    "/settings/main": {
+      "schema": "Settings",
+      "description": "Main site settings"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Group categories"
+    },
+    "/countries/{countryId}": {
+      "schema": "Country",
+      "description": "Countries for filtering"
+    },
+    "/tips/{tipId}": {
+      "schema": "Tip",
+      "description": "WhatsApp Tips & Tricks tutorials"
+    }
+  }
+}

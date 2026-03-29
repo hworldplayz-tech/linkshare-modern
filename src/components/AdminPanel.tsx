@@ -1,0 +1,1214 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Settings as SettingsIcon, 
+  Users, 
+  LayoutGrid, 
+  CheckCircle2, 
+  XCircle, 
+  Trash2, 
+  Edit3, 
+  Plus, 
+  Save, 
+  LogOut, 
+  Eye, 
+  EyeOff, 
+  Code,
+  Check,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  X,
+  Sparkles,
+  Upload,
+  LogIn,
+  ShieldCheck,
+  Globe,
+  List as ListIcon,
+  Search,
+  Calendar,
+  User as UserIcon,
+  Tag,
+  ArrowRight,
+  MessageCircle,
+  Clock,
+  Image as ImageIcon
+} from 'lucide-react';
+import { 
+  db, 
+  auth,
+  googleProvider,
+  signInWithPopup,
+  onAuthStateChanged,
+  collection, 
+  query, 
+  onSnapshot, 
+  doc, 
+  updateDoc, 
+  deleteDoc, 
+  setDoc,
+  getDoc,
+  addDoc,
+  Timestamp,
+  handleFirestoreError,
+  OperationType
+} from '../firebase';
+import { Group, SiteSettings, MenuItem, DEFAULT_SETTINGS, Category, Country, Tip } from '../types';
+import { TIPS } from '../data/tips';
+import { DEFAULT_GROUPS } from '../data/groups';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const Button = ({ 
+  children, 
+  className, 
+  variant = 'primary', 
+  size = 'md', 
+  ...props 
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & { 
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
+  size?: 'sm' | 'md' | 'lg';
+}) => {
+  const variants = {
+    primary: 'bg-[#00a884] text-white hover:bg-[#008f70]',
+    secondary: 'bg-[#128c7e] text-white hover:bg-[#075e54]',
+    outline: 'border-2 border-[#00a884] text-[#00a884] hover:bg-[#00a884] hover:text-white',
+    ghost: 'text-gray-600 hover:bg-gray-100',
+    danger: 'bg-red-500 text-white hover:bg-red-600',
+    success: 'bg-green-500 text-white hover:bg-green-600',
+  };
+  const sizes = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2',
+    lg: 'px-6 py-3 text-lg font-semibold',
+  };
+  return (
+    <button 
+      className={`rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
+
+export default function AdminPanel() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [tips, setTips] = useState<Tip[]>([]);
+  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips'>('settings');
+  const [loading, setLoading] = useState(true);
+
+  const [newCategory, setNewCategory] = useState('');
+  const [newCountry, setNewCountry] = useState('');
+  const [editingCategory, setEditingCategory] = useState<{ id: string, name: string } | null>(null);
+  const [editingCountry, setEditingCountry] = useState<{ id: string, name: string } | null>(null);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editingTip, setEditingTip] = useState<Tip | null>(null);
+  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+  const [deletingTipId, setDeletingTipId] = useState<string | null>(null);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [deletingCountryId, setDeletingCountryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedLogin = localStorage.getItem('adminLoggedIn');
+    if (savedLogin === 'true') {
+      setIsLoggedIn(true);
+    }
+    
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+    });
+
+    setLoading(false);
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'main'), (doc) => {
+      if (doc.exists()) {
+        setSettings(doc.data() as SiteSettings);
+      }
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'settings/main');
+    });
+
+    const unsubGroups = onSnapshot(collection(db, 'groups'), (snapshot) => {
+      setGroups(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group)));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'groups');
+    });
+
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'users');
+    });
+
+    const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
+      setCategories(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as Category)));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'categories');
+    });
+
+    const unsubCountries = onSnapshot(collection(db, 'countries'), (snapshot) => {
+      setCountries(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as Country)));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'countries');
+    });
+
+    const unsubTips = onSnapshot(collection(db, 'tips'), (snapshot) => {
+      setTips(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Tip)));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'tips');
+    });
+
+    return () => {
+      unsubSettings();
+      unsubGroups();
+      unsubUsers();
+      unsubCategories();
+      unsubCountries();
+      unsubTips();
+    };
+  }, [isLoggedIn]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (username === 'hworldplayz' && password === 'hworldplayz@512') {
+      setIsLoggedIn(true);
+      localStorage.setItem('adminLoggedIn', 'true');
+      setError('');
+    } else {
+      setError('Invalid credentials');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem('adminLoggedIn');
+  };
+
+  const saveSettings = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'main'), settings);
+      alert('Settings saved successfully!');
+    } catch (err) {
+      console.error('Error saving settings:', err);
+      handleFirestoreError(err, OperationType.WRITE, 'settings/main');
+    }
+  };
+
+  const addCategory = async () => {
+    if (!newCategory.trim()) return;
+    try {
+      await addDoc(collection(db, 'categories'), { name: newCategory.trim() });
+      setNewCategory('');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'categories');
+    }
+  };
+
+  const updateCategory = async () => {
+    if (!editingCategory) return;
+    try {
+      await updateDoc(doc(db, 'categories', editingCategory.id), { name: editingCategory.name });
+      setEditingCategory(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `categories/${editingCategory.id}`);
+    }
+  };
+
+  const deleteCategory = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'categories', id));
+      setDeletingCategoryId(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `categories/${id}`);
+    }
+  };
+
+  const addCountry = async () => {
+    if (!newCountry.trim()) return;
+    try {
+      await addDoc(collection(db, 'countries'), { name: newCountry.trim() });
+      setNewCountry('');
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, 'countries');
+    }
+  };
+
+  const updateCountry = async () => {
+    if (!editingCountry) return;
+    try {
+      await updateDoc(doc(db, 'countries', editingCountry.id), { name: editingCountry.name });
+      setEditingCountry(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.UPDATE, `countries/${editingCountry.id}`);
+    }
+  };
+
+  const deleteCountry = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'countries', id));
+      setDeletingCountryId(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `countries/${id}`);
+    }
+  };
+
+  const saveTip = async () => {
+    if (!editingTip) return;
+    try {
+      if (editingTip.id) {
+        const { id, ...data } = editingTip;
+        await updateDoc(doc(db, 'tips', id), data);
+      } else {
+        await addDoc(collection(db, 'tips'), editingTip);
+      }
+      setEditingTip(null);
+      alert('Tip saved successfully!');
+    } catch (err) {
+      console.error('Error saving tip:', err);
+      handleFirestoreError(err, OperationType.WRITE, 'tips');
+    }
+  };
+
+  const saveGroup = async () => {
+    if (!editingGroup) return;
+    try {
+      if (editingGroup.id) {
+        const { id, ...data } = editingGroup;
+        await updateDoc(doc(db, 'groups', id), data);
+      } else {
+        await addDoc(collection(db, 'groups'), editingGroup);
+      }
+      setEditingGroup(null);
+      alert('Group saved successfully!');
+    } catch (err) {
+      console.error('Error saving group:', err);
+      handleFirestoreError(err, OperationType.WRITE, 'groups');
+    }
+  };
+
+  const deleteTip = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'tips', id));
+      setDeletingTipId(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `tips/${id}`);
+    }
+  };
+
+  const seedTips = async () => {
+    if (tips.length > 0) {
+      if (!confirm("This will add default tips. Some might be duplicates. Continue?")) return;
+    }
+    
+    try {
+      setLoading(true);
+      for (const tip of TIPS) {
+        const { id, ...tipData } = tip;
+        await addDoc(collection(db, 'tips'), {
+          ...tipData,
+          createdAt: Timestamp.fromDate(new Date(tipData.createdAt))
+        });
+      }
+      alert("Default tips added successfully!");
+    } catch (error) {
+      console.error("Error seeding tips:", error);
+      alert("Failed to seed tips.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const seedDefaultCountries = async () => {
+    const defaults = ['Global', 'USA', 'Pakistan', 'India', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Other'];
+    for (const name of defaults) {
+      if (!countries.find(c => c.name === name)) {
+        await addDoc(collection(db, 'countries'), { name });
+      }
+    }
+  };
+
+  const seedDefaultGroups = async () => {
+    if (groups.length > 0) {
+      if (!confirm('Groups already exist. Do you want to add default groups anyway?')) return;
+    }
+    
+    setLoading(true);
+    try {
+      for (const group of DEFAULT_GROUPS) {
+        await addDoc(collection(db, 'groups'), {
+          ...group,
+          createdAt: Timestamp.fromDate(new Date(group.createdAt as string))
+        });
+      }
+      alert('Default groups added successfully!');
+    } catch (err) {
+      console.error('Error seeding groups:', err);
+      handleFirestoreError(err, OperationType.WRITE, 'groups');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const seedDefaultCategories = async () => {
+    const defaults = ['WhatsApp', 'Telegram', 'Signal', 'Discord', 'Facebook', 'Instagram', 'Other'];
+    for (const name of defaults) {
+      if (!categories.find(c => c.name === name)) {
+        await addDoc(collection(db, 'categories'), { name });
+      }
+    }
+  };
+
+  if (loading) return null;
+
+  const handleGoogleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error('Error signing in with Google:', err);
+      alert('Failed to sign in with Google');
+    }
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border border-gray-100">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-[#00a884] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#00a884]/20">
+              <ShieldCheck className="text-white w-10 h-10" />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900">Admin Login</h1>
+            <p className="text-gray-500 mt-2">Enter your credentials to manage LinkShare</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Username</label>
+              <input 
+                type="text" 
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 focus:border-[#00a884]"
+                placeholder="Enter username"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Password</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 focus:border-[#00a884]"
+                placeholder="Enter password"
+                required
+              />
+            </div>
+            {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
+            <Button type="submit" className="w-full py-4 text-lg">
+              <LogIn className="w-5 h-5" /> Login to Dashboard
+            </Button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <aside className="w-72 bg-white border-r border-gray-100 hidden lg:flex flex-col sticky top-0 h-screen">
+        <div className="p-8">
+          <div className="flex items-center gap-2 mb-8">
+            <div className="w-10 h-10 bg-[#00a884] rounded-xl flex items-center justify-center shadow-lg shadow-[#00a884]/20">
+              <ShieldCheck className="text-white w-6 h-6" />
+            </div>
+            <span className="text-2xl font-black tracking-tighter text-[#00a884]">Admin</span>
+          </div>
+
+          <nav className="space-y-2">
+            {[
+              { id: 'settings', label: 'Site Settings', icon: SettingsIcon },
+              { id: 'groups', label: 'Groups', icon: LayoutGrid },
+              { id: 'users', label: 'Users', icon: Users },
+              { id: 'categories', label: 'Categories', icon: ListIcon },
+              { id: 'countries', label: 'Countries', icon: Globe },
+              { id: 'tips', label: 'Tips & Tricks', icon: BookOpen },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm ${
+                  activeTab === tab.id 
+                    ? 'bg-[#00a884] text-white shadow-lg shadow-[#00a884]/20' 
+                    : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <tab.icon className="w-5 h-5" />
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="mt-auto p-8 border-t border-gray-50 space-y-4">
+          {!user && (
+            <button 
+              onClick={handleGoogleLogin}
+              className="flex items-center gap-3 text-[#00a884] font-bold hover:bg-[#00a884]/5 w-full px-4 py-3 rounded-xl transition-all border border-[#00a884]/20"
+            >
+              <LogIn className="w-5 h-5" /> Connect Google
+            </button>
+          )}
+          {user && (
+            <div className="px-4 py-2 bg-gray-50 rounded-xl mb-2">
+              <p className="text-xs text-gray-500 font-medium">Logged in as:</p>
+              <p className="text-sm font-bold text-gray-900 truncate">{user.email}</p>
+            </div>
+          )}
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 text-red-500 font-bold hover:bg-red-50 w-full px-4 py-3 rounded-xl transition-all"
+          >
+            <LogOut className="w-5 h-5" /> Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
+        <AnimatePresence mode="wait">
+          {activeTab === 'settings' ? (
+            <motion.div 
+              key="settings"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl space-y-8"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-black text-gray-900">Site Settings</h2>
+                <Button onClick={saveSettings}><Save className="w-5 h-5" /> Save Changes</Button>
+              </div>
+
+              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Site Title</label>
+                    <input 
+                      type="text" 
+                      value={settings.siteTitle}
+                      onChange={(e) => setSettings({...settings, siteTitle: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Logo Text</label>
+                    <input 
+                      type="text" 
+                      value={settings.headerLogoText}
+                      onChange={(e) => setSettings({...settings, headerLogoText: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Tips & Tricks Section Image (Upload or URL)</label>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                      {settings.tipsSectionImageUrl && (
+                        <div className="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center shrink-0">
+                          <img src={settings.tipsSectionImageUrl} alt="Tips Section Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex-1 relative">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setSettings({...settings, tipsSectionImageUrl: reader.result as string});
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="hidden"
+                          id="tips-image-upload"
+                        />
+                        <label 
+                          htmlFor="tips-image-upload"
+                          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 border-dashed rounded-xl cursor-pointer hover:bg-100 transition-colors text-sm font-medium text-gray-600"
+                        >
+                          <Upload className="w-4 h-4" /> {settings.tipsSectionImageUrl ? 'Change Image' : 'Upload Image'}
+                        </label>
+                      </div>
+                      {settings.tipsSectionImageUrl && (
+                        <button 
+                          onClick={() => setSettings({...settings, tipsSectionImageUrl: ''})}
+                          className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                          title="Remove Image"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold uppercase">URL</div>
+                      <input 
+                        type="text" 
+                        value={settings.tipsSectionImageUrl || ''}
+                        onChange={(e) => setSettings({...settings, tipsSectionImageUrl: e.target.value})}
+                        className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                        placeholder="Or paste image URL here..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Footer About Text</label>
+                  <textarea 
+                    value={settings.footerAbout}
+                    onChange={(e) => setSettings({...settings, footerAbout: e.target.value})}
+                    rows={4}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                  />
+                </div>
+              </div>
+            </motion.div>
+          ) : activeTab === 'tips' ? (
+            <motion.div 
+              key="tips"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900">Manage Tips & Tricks</h2>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <Button variant="outline" onClick={seedTips} className="flex-1 sm:flex-none">
+                    <Sparkles className="w-4 h-4" /> Add Default Tips
+                  </Button>
+                  <Button onClick={() => setEditingTip({ title: '', slug: '', excerpt: '', content: '', category: 'WhatsApp', author: 'Admin', imageUrl: '', createdAt: new Date().toISOString() } as any)} className="flex-1 sm:flex-none">
+                    <Plus className="w-5 h-5" /> Add New Tip
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {tips.map((tip) => (
+                  <div key={tip.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+                    <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                      {tip.imageUrl ? (
+                        <img src={tip.imageUrl} alt={tip.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <BookOpen className="w-12 h-12" />
+                        </div>
+                      )}
+                      <div className="absolute top-4 left-4">
+                        <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-[#00a884] text-[10px] font-black uppercase tracking-wider rounded-full shadow-sm">
+                          {tip.category}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="font-black text-gray-900 mb-2 line-clamp-2">{tip.title}</h3>
+                      <p className="text-sm text-gray-500 mb-6 line-clamp-2">{tip.excerpt}</p>
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                          {new Date(tip.createdAt).toLocaleDateString()}
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setEditingTip(tip)}
+                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
+                          >
+                            <Edit3 className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => setDeletingTipId(tip.id!)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          ) : activeTab === 'categories' ? (
+            <motion.div 
+              key="categories"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900">Manage Categories</h2>
+                <Button variant="outline" onClick={seedDefaultCategories} className="w-full sm:w-auto">
+                  <Sparkles className="w-4 h-4" /> Add Default Categories
+                </Button>
+              </div>
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <input 
+                    type="text" 
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="New category name..."
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                  />
+                  <Button onClick={addCategory} className="w-full sm:w-auto"><Plus className="w-5 h-5" /> Add</Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {categories.map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      {editingCategory?.id === cat.id ? (
+                        <div className="flex gap-2 w-full">
+                          <input 
+                            type="text" 
+                            value={editingCategory.name}
+                            onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                            className="flex-1 px-2 py-1 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none"
+                            autoFocus
+                          />
+                          <button onClick={updateCategory} className="text-green-500 hover:bg-green-50 p-1 rounded-lg">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setEditingCategory(null)} className="text-gray-400 hover:bg-gray-100 p-1 rounded-lg">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="font-bold text-gray-700">{cat.name}</span>
+                          <div className="flex gap-1">
+                            <button onClick={() => setEditingCategory({ id: cat.id, name: cat.name })} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setDeletingCategoryId(cat.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          ) : activeTab === 'countries' ? (
+            <motion.div 
+              key="countries"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900">Manage Countries</h2>
+                <Button variant="outline" onClick={seedDefaultCountries} className="w-full sm:w-auto">
+                  <Sparkles className="w-4 h-4" /> Add Default Countries
+                </Button>
+              </div>
+              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <input 
+                    type="text" 
+                    value={newCountry}
+                    onChange={(e) => setNewCountry(e.target.value)}
+                    placeholder="New country name..."
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                  />
+                  <Button onClick={addCountry} className="w-full sm:w-auto"><Plus className="w-5 h-5" /> Add</Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {countries.map(count => (
+                    <div key={count.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      {editingCountry?.id === count.id ? (
+                        <div className="flex gap-2 w-full">
+                          <input 
+                            type="text" 
+                            value={editingCountry.name}
+                            onChange={(e) => setEditingCountry({ ...editingCountry, name: e.target.value })}
+                            className="flex-1 px-2 py-1 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none"
+                            autoFocus
+                          />
+                          <button onClick={updateCountry} className="text-green-500 hover:bg-green-50 p-1 rounded-lg">
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setEditingCountry(null)} className="text-gray-400 hover:bg-gray-100 p-1 rounded-lg">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="font-bold text-gray-700">{count.name}</span>
+                          <div className="flex gap-1">
+                            <button onClick={() => setEditingCountry({ id: count.id, name: count.name })} className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setDeletingCountryId(count.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          ) : activeTab === 'groups' ? (
+            <motion.div 
+              key="groups"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-black text-gray-900">Manage Groups</h2>
+                <div className="flex gap-4">
+                  <Button variant="outline" onClick={seedDefaultGroups} disabled={loading}>
+                    <Plus className="w-5 h-5" /> Seed Default Groups
+                  </Button>
+                  <Button onClick={() => setEditingGroup({ title: '', link: '', category: '', country: '', description: '', status: 'approved', createdAt: new Date().toISOString(), type: 'group', authorUid: 'hworldplayz' } as any)}>
+                    <Plus className="w-5 h-5" /> Add Group
+                  </Button>
+                </div>
+              </div>
+              <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Group Name</th>
+                      <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Category</th>
+                      <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Status</th>
+                      <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {groups.map(group => (
+                      <tr key={group.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-gray-900">{group.title}</div>
+                          <div className="text-xs text-gray-400 truncate max-w-[200px]">{group.link}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-3 py-1 bg-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-wider rounded-full">
+                            {group.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-full ${
+                            group.status === 'approved' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
+                          }`}>
+                            {group.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            <button onClick={() => setEditingGroup(group)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors">
+                              <Edit3 className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => setDeletingGroupId(group.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="users"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <h2 className="text-3xl font-black text-gray-900">Registered Users</h2>
+              <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">User</th>
+                      <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Email</th>
+                      <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {users.map(user => (
+                      <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 font-black">
+                              {user.displayName?.[0] || 'U'}
+                            </div>
+                            <div className="font-bold text-gray-900">{user.displayName || 'Anonymous'}</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-gray-500">{user.email}</td>
+                        <td className="px-6 py-4 text-gray-400 text-sm">
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* Edit Group Modal */}
+      <AnimatePresence>
+        {editingGroup && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingGroup(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-2xl"
+            >
+              <div className="p-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                <h3 className="text-2xl font-black text-gray-900">
+                  {editingGroup.id ? 'Edit Group' : 'Add New Group'}
+                </h3>
+                <button onClick={() => setEditingGroup(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Group Name</label>
+                    <input 
+                      type="text" 
+                      value={editingGroup.title}
+                      onChange={(e) => setEditingGroup({ ...editingGroup, title: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="WhatsApp Group Name"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Invite Link</label>
+                    <input 
+                      type="text" 
+                      value={editingGroup.link}
+                      onChange={(e) => setEditingGroup({ ...editingGroup, link: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="https://chat.whatsapp.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                    <select 
+                      value={editingGroup.category}
+                      onChange={(e) => setEditingGroup({ ...editingGroup, category: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    >
+                      <option value="">Select Category</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Country</label>
+                    <select 
+                      value={editingGroup.country}
+                      onChange={(e) => setEditingGroup({ ...editingGroup, country: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    >
+                      <option value="">Select Country</option>
+                      {countries.map(count => (
+                        <option key={count.id} value={count.name}>{count.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Description</label>
+                    <textarea 
+                      value={editingGroup.description}
+                      onChange={(e) => setEditingGroup({ ...editingGroup, description: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="What is this group about?"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Status</label>
+                    <select 
+                      value={editingGroup.status}
+                      onChange={(e) => setEditingGroup({ ...editingGroup, status: e.target.value as any })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 border-t border-gray-100 flex justify-end gap-4 sticky bottom-0 bg-white">
+                <Button variant="outline" onClick={() => setEditingGroup(null)}>Cancel</Button>
+                <Button onClick={saveGroup}><Save className="w-5 h-5" /> Save Group</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Tip Modal */}
+      <AnimatePresence>
+        {editingTip && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingTip(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-2xl"
+            >
+              <div className="p-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                <h3 className="text-2xl font-black text-gray-900">
+                  {editingTip.id ? 'Edit Tutorial' : 'Add New Tutorial'}
+                </h3>
+                <button onClick={() => setEditingTip(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Title</label>
+                    <input 
+                      type="text" 
+                      value={editingTip.title}
+                      onChange={(e) => setEditingTip({ ...editingTip, title: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="How to..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Slug</label>
+                    <input 
+                      type="text" 
+                      value={editingTip.slug}
+                      onChange={(e) => setEditingTip({ ...editingTip, slug: e.target.value.toLowerCase().replace(/ /g, '-') })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="how-to-..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                    <select 
+                      value={editingTip.category}
+                      onChange={(e) => setEditingTip({ ...editingTip, category: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    >
+                      {categories.length > 0 ? (
+                        categories.map(cat => (
+                          <option key={cat.id} value={cat.name}>{cat.name}</option>
+                        ))
+                      ) : (
+                        ['WhatsApp', 'Privacy', 'Tutorial', 'Tips', 'Secrets', 'Tricks', 'Creative'].map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Excerpt (Short Description)</label>
+                    <textarea 
+                      value={editingTip.excerpt}
+                      onChange={(e) => setEditingTip({ ...editingTip, excerpt: e.target.value })}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="A brief summary of the tutorial..."
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Tip Image (Upload or URL)</label>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-4">
+                        {editingTip.imageUrl && (
+                          <div className="w-24 h-24 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                            <img src={editingTip.imageUrl} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="flex-1 relative">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setEditingTip({...editingTip, imageUrl: reader.result as string});
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                            id="tip-modal-image-upload"
+                          />
+                          <label 
+                            htmlFor="tip-modal-image-upload"
+                            className="flex items-center justify-center gap-2 px-4 py-4 bg-gray-50 border border-gray-200 border-dashed rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+                          >
+                            <Upload className="w-5 h-5" /> {editingTip.imageUrl ? 'Change Image' : 'Upload Image'}
+                          </label>
+                        </div>
+                        {editingTip.imageUrl && (
+                          <button 
+                            onClick={() => setEditingTip({...editingTip, imageUrl: ''})}
+                            className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                            title="Remove Image"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold uppercase">URL</div>
+                        <input 
+                          type="text" 
+                          value={editingTip.imageUrl}
+                          onChange={(e) => setEditingTip({ ...editingTip, imageUrl: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                          placeholder="Or paste image URL here..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Content (HTML Supported)</label>
+                    <textarea 
+                      value={editingTip.content}
+                      onChange={(e) => setEditingTip({ ...editingTip, content: e.target.value })}
+                      rows={10}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="<p>Write your tutorial content here...</p>"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 border-t border-gray-100 flex justify-end gap-4 sticky bottom-0 bg-white">
+                <Button variant="outline" onClick={() => setEditingTip(null)}>Cancel</Button>
+                <Button onClick={saveTip}><Save className="w-5 h-5" /> Save Tutorial</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirmation Modals */}
+      <AnimatePresence>
+        {(deletingGroupId || deletingTipId || deletingCategoryId || deletingCountryId) && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setDeletingGroupId(null);
+                setDeletingTipId(null);
+                setDeletingCategoryId(null);
+                setDeletingCountryId(null);
+              }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full text-center"
+            >
+              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-500">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-black text-gray-900 mb-2">Are you sure?</h3>
+              <p className="text-gray-500 mb-8">This action cannot be undone. This item will be permanently deleted.</p>
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setDeletingGroupId(null);
+                    setDeletingTipId(null);
+                    setDeletingCategoryId(null);
+                    setDeletingCountryId(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  variant="danger" 
+                  className="flex-1"
+                  onClick={() => {
+                    if (deletingGroupId) {
+                      deleteDoc(doc(db, 'groups', deletingGroupId)).then(() => setDeletingGroupId(null));
+                    }
+                    if (deletingTipId) {
+                      deleteTip(deletingTipId).then(() => setDeletingTipId(null));
+                    }
+                    if (deletingCategoryId) {
+                      deleteCategory(deletingCategoryId).then(() => setDeletingCategoryId(null));
+                    }
+                    if (deletingCountryId) {
+                      deleteCountry(deletingCountryId).then(() => setDeletingCountryId(null));
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
