@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { auth, db, doc, onSnapshot, setDoc, updateDoc, onAuthStateChanged, trackUserLogin } from './firebase';
 import { SiteSettings, DEFAULT_SETTINGS } from './types';
 import PublicSite from './components/PublicSite';
@@ -15,7 +16,11 @@ import TipDetailPage from './components/TipDetailPage';
 import ToolPage from './components/ToolPage';
 
 export default function App() {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
+  // Load initial settings from localStorage if available for instant feel
+  const [settings, setSettings] = useState<SiteSettings | null>(() => {
+    const cached = localStorage.getItem('site_settings');
+    return cached ? JSON.parse(cached) : null;
+  });
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -29,13 +34,9 @@ export default function App() {
         const data = docSnap.data() as SiteSettings;
         setSettings(data);
         
-        // Update document metadata
-        document.title = data.siteTitle || DEFAULT_SETTINGS.siteTitle;
-        const metaDesc = document.querySelector('meta[name="description"]');
-        if (metaDesc) {
-          metaDesc.setAttribute('content', data.siteDescription || DEFAULT_SETTINGS.siteDescription);
-        }
-
+        // Cache settings for next visit
+        localStorage.setItem('site_settings', JSON.stringify(data));
+        
         // Migration: Ensure legal links are correct if they are placeholders
         const needsLegalUpdate = data.footerLegalLinks?.some(link => link.href === '#');
         const needsQuickUpdate = data.footerQuickLinks?.some(link => link.href === '#');
@@ -100,6 +101,7 @@ export default function App() {
         // Initialize settings if they don't exist
         setDoc(doc(db, 'settings', 'main'), DEFAULT_SETTINGS);
         setSettings(DEFAULT_SETTINGS);
+        localStorage.setItem('site_settings', JSON.stringify(DEFAULT_SETTINGS));
       }
     });
 
@@ -109,28 +111,55 @@ export default function App() {
     };
   }, []);
 
+  // If no settings and no cache, show a minimal loading state
   if (!settings) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00a884]"></div>
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="w-12 h-12 border-4 border-[#00a884] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
+  const currentTitle = settings.siteTitle || DEFAULT_SETTINGS.siteTitle;
+  const currentDesc = settings.siteDescription || DEFAULT_SETTINGS.siteDescription;
+
   return (
-    <Routes>
-      <Route path="/" element={<PublicSite settings={settings} />} />
-      <Route path="/about" element={<AboutPage settings={settings} />} />
-      <Route path="/contact" element={<ContactPage settings={settings} />} />
-      <Route path="/privacy" element={<PrivacyPage settings={settings} />} />
-      <Route path="/terms" element={<TermsPage settings={settings} />} />
-      <Route path="/disclaimer" element={<DisclaimerPage settings={settings} />} />
-      <Route path="/tips-tricks" element={<TipsPage settings={settings} />} />
-      <Route path="/tips-tricks/:slug" element={<TipDetailPage settings={settings} />} />
-      <Route path="/tools/:toolId" element={<ToolPage settings={settings} />} />
-      <Route path="/admin" element={<AdminPanel />} />
-      <Route path="/invite/:id" element={<InviteDetail settings={settings} />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Helmet>
+        <title>{currentTitle}</title>
+        <meta name="description" content={currentDesc} />
+        
+        {/* OpenGraph */}
+        <meta property="og:title" content={currentTitle} />
+        <meta property="og:description" content={currentDesc} />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={window.location.origin} />
+        {settings.headerLogoUrl && <meta property="og:image" content={settings.headerLogoUrl} />}
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={currentTitle} />
+        <meta name="twitter:description" content={currentDesc} />
+        {settings.headerLogoUrl && <meta name="twitter:image" content={settings.headerLogoUrl} />}
+        
+        {/* Canonical */}
+        <link rel="canonical" href={window.location.origin + window.location.pathname} />
+      </Helmet>
+
+      <Routes>
+        <Route path="/" element={<PublicSite settings={settings} />} />
+        <Route path="/about" element={<AboutPage settings={settings} />} />
+        <Route path="/contact" element={<ContactPage settings={settings} />} />
+        <Route path="/privacy" element={<PrivacyPage settings={settings} />} />
+        <Route path="/terms" element={<TermsPage settings={settings} />} />
+        <Route path="/disclaimer" element={<DisclaimerPage settings={settings} />} />
+        <Route path="/tips-tricks" element={<TipsPage settings={settings} />} />
+        <Route path="/tips-tricks/:slug" element={<TipDetailPage settings={settings} />} />
+        <Route path="/tools/:toolId" element={<ToolPage settings={settings} />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/invite/:id" element={<InviteDetail settings={settings} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
