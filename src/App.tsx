@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
+import ScrollToTop from './components/ScrollToTop';
 import { auth, db, doc, onSnapshot, setDoc, updateDoc, onAuthStateChanged, trackUserLogin } from './firebase';
 import { SiteSettings, DEFAULT_SETTINGS } from './types';
 import PublicSite from './components/PublicSite';
@@ -145,6 +146,8 @@ export default function App() {
         {/* Canonical */}
         <link rel="canonical" href={window.location.origin + window.location.pathname} />
       </Helmet>
+
+      <ScrollToTop />
 
       <Routes>
         <Route path="/" element={<PublicSite settings={settings} />} />

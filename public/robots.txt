@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ais-pre-muidgiethgw62vuj45isuf-738539506882.asia-southeast1.run.app/sitemap.xml
+Sitemap: https://linksshare.online/sitemap.xml

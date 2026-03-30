@@ -10,23 +10,27 @@ export const googleProvider = new GoogleAuthProvider();
 
 export async function trackUserLogin(user: User) {
   const userRef = doc(db, 'users', user.uid);
-  const userSnap = await getDoc(userRef);
+  try {
+    const userSnap = await getDoc(userRef);
 
-  if (!userSnap.exists()) {
-    await setDoc(userRef, {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      lastLogin: serverTimestamp(),
-      groupsCount: 0
-    });
-  } else {
-    await updateDoc(userRef, {
-      lastLogin: serverTimestamp(),
-      displayName: user.displayName,
-      photoURL: user.photoURL
-    });
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        lastLogin: serverTimestamp(),
+        groupsCount: 0
+      });
+    } else {
+      await updateDoc(userRef, {
+        lastLogin: serverTimestamp(),
+        displayName: user.displayName,
+        photoURL: user.photoURL
+      });
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
   }
 }
 
