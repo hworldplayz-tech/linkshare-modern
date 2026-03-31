@@ -35,10 +35,34 @@ import {
   Pilcrow,
   Heading,
   Mic,
-  Edit3
+  Edit3,
+  FileEdit,
+  Eraser,
+  Square,
+  Circle,
+  Type as TypeIcon,
+  Image as ImageIcon,
+  Crop,
+  Layers,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Minimize,
+  Save,
+  Undo,
+  Redo,
+  MousePointer2,
+  Hand
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { Canvas, FabricImage, Textbox, PencilBrush, Rect } from 'fabric';
+import * as pdfjsLib from 'pdfjs-dist';
+import { jsPDF } from 'jspdf';
+
+// Set PDF.js worker using jsdelivr for version 5.x compatibility
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
 import { SiteSettings, TOOLS, Tool } from '../types';
 import { auth, onAuthStateChanged, googleProvider, signInWithPopup, signOut } from '../firebase';
 import { User } from 'firebase/auth';
@@ -57,7 +81,8 @@ const iconMap: Record<string, any> = {
   QrCode,
   Type,
   Link: LinkIcon,
-  Cpu
+  Cpu,
+  FileEdit
 };
 
 // --- AI Detector Component ---
@@ -993,6 +1018,632 @@ const TextRepeater = () => {
 };
 
 // --- Word Counter Component ---
+// --- PDF Editor Component ---
+const PDFEditor = () => {
+  const [pdfFile, setPdfFile] = React.useState<File | null>(null);
+  const [numPages, setNumPages] = React.useState(0);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [activeTool, setActiveTool] = React.useState<'select' | 'text' | 'draw' | 'erase' | 'image' | 'rect'>('select');
+  const [zoom, setZoom] = React.useState(1);
+  const [pages, setPages] = React.useState<any[]>([]);
+  const [fabricCanvases, setFabricCanvases] = React.useState<Record<number, any>>({});
+  
+  // Tool Options
+  const [brushColor, setBrushColor] = React.useState('#00a884');
+  const [brushWidth, setBrushWidth] = React.useState(5);
+  const [textColor, setTextColor] = React.useState('#000000');
+  const [fontSize, setFontSize] = React.useState(20);
+  const [isBold, setIsBold] = React.useState(false);
+  const [isItalic, setIsItalic] = React.useState(false);
+  const [rectColor, setRectColor] = React.useState('#000000');
+
+  // History for Undo/Redo
+  const [history, setHistory] = React.useState<Record<number, string[]>>({});
+  const [historyIndex, setHistoryIndex] = React.useState<Record<number, number>>({});
+  
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Save state to history
+  const saveHistory = (pageNumber: number, canvas: any) => {
+    const json = JSON.stringify(canvas.toJSON());
+    setHistory(prev => {
+      const pageHistory = prev[pageNumber] || [];
+      const currentIndex = historyIndex[pageNumber] ?? -1;
+      const newHistory = pageHistory.slice(0, currentIndex + 1);
+      newHistory.push(json);
+      // Limit history to 50 steps
+      if (newHistory.length > 50) newHistory.shift();
+      return { ...prev, [pageNumber]: newHistory };
+    });
+    setHistoryIndex(prev => ({ ...prev, [pageNumber]: (prev[pageNumber] ?? -1) + 1 }));
+  };
+
+  const undo = () => {
+    const canvas = fabricCanvases[currentPage];
+    const pageHistory = history[currentPage];
+    const currentIndex = historyIndex[currentPage];
+    if (!canvas || !pageHistory || currentIndex <= 0) return;
+
+    const newIndex = currentIndex - 1;
+    canvas.loadFromJSON(JSON.parse(pageHistory[newIndex])).then(() => {
+      canvas.renderAll();
+      setHistoryIndex(prev => ({ ...prev, [currentPage]: newIndex }));
+    });
+  };
+
+  const redo = () => {
+    const canvas = fabricCanvases[currentPage];
+    const pageHistory = history[currentPage];
+    const currentIndex = historyIndex[currentPage];
+    if (!canvas || !pageHistory || currentIndex >= pageHistory.length - 1) return;
+
+    const newIndex = currentIndex + 1;
+    canvas.loadFromJSON(JSON.parse(pageHistory[newIndex])).then(() => {
+      canvas.renderAll();
+      setHistoryIndex(prev => ({ ...prev, [currentPage]: newIndex }));
+    });
+  };
+
+  // Local Storage Persistence
+  React.useEffect(() => {
+    if (pdfFile) {
+      const savedData = localStorage.getItem(`pdf_edits_${pdfFile.name}_${pdfFile.size}`);
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          // We can't easily restore fabric objects until canvases are initialized
+          // So we'll store them and apply when renderPage happens
+          (window as any)._pendingEdits = parsed;
+        } catch (e) {
+          console.error('Failed to load saved edits', e);
+        }
+      }
+    }
+  }, [pdfFile]);
+
+  const persistEdits = () => {
+    if (!pdfFile) return;
+    const edits: Record<number, any> = {};
+    Object.entries(fabricCanvases).forEach(([page, canvas]) => {
+      edits[Number(page)] = (canvas as any).toJSON();
+    });
+    localStorage.setItem(`pdf_edits_${pdfFile.name}_${pdfFile.size}`, JSON.stringify(edits));
+  };
+
+  React.useEffect(() => {
+    const interval = setInterval(persistEdits, 5000);
+    return () => clearInterval(interval);
+  }, [fabricCanvases, pdfFile]);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || file.type !== 'application/pdf') return;
+    
+    setIsLoading(true);
+    setPdfFile(file);
+    
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      setNumPages(pdf.numPages);
+      
+      const newPages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1.5 });
+        newPages.push({
+          pageNumber: i,
+          width: viewport.width,
+          height: viewport.height,
+          viewport
+        });
+      }
+      setPages(newPages);
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Error loading PDF:', error);
+      alert('Failed to load PDF. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderPage = React.useCallback(async (pageData: any) => {
+    if (!pdfFile) return;
+    
+    const canvasId = `pdf-canvas-${pageData.pageNumber}`;
+    const fabricId = `fabric-canvas-${pageData.pageNumber}`;
+    const pdfCanvas = document.getElementById(canvasId) as HTMLCanvasElement;
+    
+    if (!pdfCanvas) return;
+
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const page = await pdf.getPage(pageData.pageNumber);
+    const viewport = page.getViewport({ scale: 1.5 * zoom });
+    
+    pdfCanvas.width = viewport.width;
+    pdfCanvas.height = viewport.height;
+    const ctx = pdfCanvas.getContext('2d');
+    if (ctx) {
+      await (page as any).render({ canvasContext: ctx, viewport } as any).promise;
+    }
+
+    // Initialize Fabric Canvas if not already
+    if (!fabricCanvases[pageData.pageNumber]) {
+      const fCanvas = new Canvas(fabricId, {
+        width: viewport.width,
+        height: viewport.height,
+        preserveObjectStacking: true
+      });
+
+      // Restore from local storage if available
+      const pending = (window as any)._pendingEdits;
+      if (pending && pending[pageData.pageNumber]) {
+        fCanvas.loadFromJSON(pending[pageData.pageNumber]).then(() => {
+          fCanvas.renderAll();
+          saveHistory(pageData.pageNumber, fCanvas);
+        });
+      } else {
+        saveHistory(pageData.pageNumber, fCanvas);
+      }
+
+      fCanvas.on('object:added', () => saveHistory(pageData.pageNumber, fCanvas));
+      fCanvas.on('object:modified', () => saveHistory(pageData.pageNumber, fCanvas));
+      fCanvas.on('object:removed', () => saveHistory(pageData.pageNumber, fCanvas));
+
+      setFabricCanvases(prev => ({ ...prev, [pageData.pageNumber]: fCanvas }));
+    } else {
+      const fCanvas = fabricCanvases[pageData.pageNumber];
+      fCanvas.setDimensions({ width: viewport.width, height: viewport.height });
+      fCanvas.renderAll();
+    }
+  }, [pdfFile, zoom, fabricCanvases]);
+
+  React.useEffect(() => {
+    if (pages.length > 0) {
+      const page = pages[currentPage - 1];
+      if (page) renderPage(page);
+    }
+  }, [currentPage, pages, zoom]);
+
+  const addText = () => {
+    const canvas = fabricCanvases[currentPage];
+    if (!canvas) return;
+    
+    const text = new Textbox('Type your text here...', {
+      left: 100,
+      top: 100,
+      width: 200,
+      fontSize: fontSize,
+      fill: textColor,
+      fontFamily: 'Inter',
+      fontWeight: isBold ? 'bold' : 'normal',
+      fontStyle: isItalic ? 'italic' : 'normal'
+    });
+    canvas.add(text);
+    canvas.setActiveObject(text);
+    setActiveTool('text');
+    canvas.isDrawingMode = false;
+  };
+
+  const addRect = () => {
+    const canvas = fabricCanvases[currentPage];
+    if (!canvas) return;
+    
+    const rect = new Rect({
+      left: 100,
+      top: 100,
+      width: 100,
+      height: 60,
+      fill: rectColor,
+      stroke: 'transparent',
+      strokeWidth: 0
+    });
+    canvas.add(rect);
+    canvas.setActiveObject(rect);
+    setActiveTool('rect');
+    canvas.isDrawingMode = false;
+  };
+
+  const addImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (f) => {
+        const data = f.target?.result as string;
+        try {
+          const img = await FabricImage.fromURL(data);
+          const canvas = fabricCanvases[currentPage];
+          if (!canvas) return;
+          
+          img.scaleToWidth(200);
+          canvas.add(img);
+          canvas.setActiveObject(img);
+          canvas.renderAll();
+          setActiveTool('image');
+          canvas.isDrawingMode = false;
+        } catch (err) {
+          console.error('Error loading image into fabric:', err);
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const toggleDraw = () => {
+    const canvas = fabricCanvases[currentPage];
+    if (!canvas) return;
+    
+    const isDrawing = activeTool === 'draw';
+    canvas.isDrawingMode = !isDrawing;
+    if (!isDrawing) {
+      canvas.freeDrawingBrush = new PencilBrush(canvas);
+      canvas.freeDrawingBrush.width = brushWidth;
+      canvas.freeDrawingBrush.color = brushColor;
+      setActiveTool('draw');
+    } else {
+      setActiveTool('select');
+    }
+  };
+
+  // Update brush settings when options change
+  React.useEffect(() => {
+    const canvas = fabricCanvases[currentPage];
+    if (canvas && canvas.isDrawingMode && canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush.color = brushColor;
+      canvas.freeDrawingBrush.width = brushWidth;
+    }
+  }, [brushColor, brushWidth, currentPage, fabricCanvases]);
+
+  const deleteSelected = () => {
+    const canvas = fabricCanvases[currentPage];
+    if (!canvas) return;
+    const activeObjects = canvas.getActiveObjects();
+    canvas.remove(...activeObjects);
+    canvas.discardActiveObject().renderAll();
+  };
+
+  const downloadPdf = async () => {
+    if (!pdfFile || pages.length === 0) return;
+    
+    setIsLoading(true);
+    try {
+      const doc = new jsPDF({
+        unit: 'pt',
+        format: [pages[0].width, pages[0].height]
+      });
+
+      for (let i = 0; i < pages.length; i++) {
+        const pageData = pages[i];
+        const pdfCanvas = document.getElementById(`pdf-canvas-${pageData.pageNumber}`) as HTMLCanvasElement;
+        const fabricCanvas = fabricCanvases[pageData.pageNumber];
+        
+        if (!pdfCanvas) continue;
+
+        // Create a temporary canvas to merge PDF and Fabric layers
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = pageData.width;
+        tempCanvas.height = pageData.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        if (tempCtx) {
+          // Draw PDF background
+          tempCtx.drawImage(pdfCanvas, 0, 0);
+          
+          // Draw Fabric overlay
+          if (fabricCanvas) {
+            const overlayData = fabricCanvas.toDataURL({ format: 'png' });
+            const img = await new Promise<HTMLImageElement>((resolve) => {
+              const img = new Image();
+              img.onload = () => resolve(img);
+              img.src = overlayData;
+            });
+            tempCtx.drawImage(img, 0, 0);
+          }
+        }
+
+        const imgData = tempCanvas.toDataURL('image/jpeg', 0.95);
+        if (i > 0) {
+          doc.addPage([pageData.width, pageData.height], 'portrait');
+        }
+        doc.addImage(imgData, 'JPEG', 0, 0, pageData.width, pageData.height);
+      }
+
+      doc.save('edited_document.pdf');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* --- Toolbar --- */}
+      <div className="bg-white rounded-[2rem] border border-gray-100 p-4 shadow-sm flex flex-wrap items-center gap-2 sticky top-24 z-30">
+        <input 
+          type="file" 
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="application/pdf"
+          className="hidden"
+        />
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => fileInputRef.current?.click()}
+          className="gap-2 rounded-xl"
+        >
+          <Upload className="w-4 h-4" /> Open PDF
+        </Button>
+        
+        <div className="w-px h-8 bg-gray-100 mx-2" />
+        
+        <div className="flex items-center bg-gray-50 rounded-xl p-1">
+          <button 
+            onClick={() => {
+              setActiveTool('select');
+              const canvas = fabricCanvases[currentPage];
+              if (canvas) canvas.isDrawingMode = false;
+            }}
+            className={`p-2 rounded-lg transition-all ${activeTool === 'select' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            title="Select Tool"
+          >
+            <MousePointer2 className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={addText}
+            className={`p-2 rounded-lg transition-all ${activeTool === 'text' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            title="Add Text"
+          >
+            <TypeIcon className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={toggleDraw}
+            className={`p-2 rounded-lg transition-all ${activeTool === 'draw' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            title="Draw Tool"
+          >
+            <Edit3 className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={addRect}
+            className={`p-2 rounded-lg transition-all ${activeTool === 'rect' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            title="Add Square"
+          >
+            <Square className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={addImage}
+            className={`p-2 rounded-lg transition-all ${activeTool === 'image' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+            title="Add Image"
+          >
+            <ImageIcon className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={deleteSelected}
+            className="p-2 rounded-lg text-gray-400 hover:text-red-500 transition-all"
+            title="Delete Selected"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="w-px h-8 bg-gray-100 mx-2" />
+
+        <div className="flex items-center bg-gray-50 rounded-xl p-1">
+          <button 
+            onClick={undo}
+            disabled={!history[currentPage] || historyIndex[currentPage] <= 0}
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-all"
+            title="Undo"
+          >
+            <Undo className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={redo}
+            disabled={!history[currentPage] || historyIndex[currentPage] >= (history[currentPage]?.length - 1)}
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-all"
+            title="Redo"
+          >
+            <Redo className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="w-px h-8 bg-gray-100 mx-2" />
+        
+        {/* --- Tool Options Panel --- */}
+        <div className="flex items-center gap-3 px-2">
+          {activeTool === 'draw' && (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+              <span className="text-xs font-medium text-gray-500">Color:</span>
+              <input 
+                type="color" 
+                value={brushColor} 
+                onChange={(e) => setBrushColor(e.target.value)}
+                className="w-6 h-6 rounded cursor-pointer border-0 p-0 overflow-hidden"
+              />
+              <span className="text-xs font-medium text-gray-500 ml-2">Size:</span>
+              <input 
+                type="range" 
+                min="1" 
+                max="50" 
+                value={brushWidth} 
+                onChange={(e) => setBrushWidth(Number(e.target.value))}
+                className="w-20 accent-[#00a884]"
+              />
+            </div>
+          )}
+          {activeTool === 'text' && (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+              <span className="text-xs font-medium text-gray-500">Color:</span>
+              <input 
+                type="color" 
+                value={textColor} 
+                onChange={(e) => setTextColor(e.target.value)}
+                className="w-6 h-6 rounded cursor-pointer border-0 p-0 overflow-hidden"
+              />
+              <span className="text-xs font-medium text-gray-500 ml-2">Size:</span>
+              <select 
+                value={fontSize} 
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="text-xs border border-gray-200 rounded p-1 outline-none"
+              >
+                {[12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64, 72].map(s => (
+                  <option key={s} value={s}>{s}px</option>
+                ))}
+              </select>
+              <div className="flex border border-gray-200 rounded overflow-hidden ml-1">
+                <button 
+                  onClick={() => setIsBold(!isBold)}
+                  className={`p-1 px-2 text-xs font-bold ${isBold ? 'bg-gray-200' : 'bg-white'}`}
+                >B</button>
+                <button 
+                  onClick={() => setIsItalic(!isItalic)}
+                  className={`p-1 px-2 text-xs italic ${isItalic ? 'bg-gray-200' : 'bg-white'}`}
+                >I</button>
+              </div>
+            </div>
+          )}
+          {activeTool === 'rect' && (
+            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+              <span className="text-xs font-medium text-gray-500">Fill Color:</span>
+              <input 
+                type="color" 
+                value={rectColor} 
+                onChange={(e) => setRectColor(e.target.value)}
+                className="w-6 h-6 rounded cursor-pointer border-0 p-0 overflow-hidden"
+              />
+              <p className="text-[10px] text-gray-400 italic ml-2">Use for hiding content</p>
+            </div>
+          )}
+        </div>
+
+        <div className="w-px h-8 bg-gray-100 mx-2" />
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
+            className="p-2 text-gray-400 hover:text-gray-600"
+          >
+            <ZoomOut className="w-5 h-5" />
+          </button>
+          <span className="text-xs font-bold text-gray-500 w-12 text-center">{Math.round(zoom * 100)}%</span>
+          <button 
+            onClick={() => setZoom(prev => Math.min(3, prev + 0.1))}
+            className="p-2 text-gray-400 hover:text-gray-600"
+          >
+            <ZoomIn className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1" />
+
+        <Button 
+          onClick={downloadPdf}
+          disabled={!pdfFile || isLoading}
+          className="bg-[#00a884] hover:bg-[#008f70] text-white gap-2 rounded-xl"
+        >
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          Download PDF
+        </Button>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* --- Sidebar / Thumbnails --- */}
+        <div className="w-full lg:w-64 flex-shrink-0 space-y-4">
+          <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm">
+            <h4 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-[#00a884]" /> Pages ({numPages})
+            </h4>
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+              {pages.map((page) => (
+                <button
+                  key={page.pageNumber}
+                  onClick={() => setCurrentPage(page.pageNumber)}
+                  className={`w-full p-3 rounded-2xl border-2 transition-all text-left flex items-center gap-3 ${currentPage === page.pageNumber ? 'border-[#00a884] bg-[#00a884]/5' : 'border-transparent bg-gray-50 hover:bg-gray-100'}`}
+                >
+                  <div className="w-10 h-14 bg-white border border-gray-200 rounded flex items-center justify-center text-[10px] font-bold text-gray-400">
+                    {page.pageNumber}
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-gray-900">Page {page.pageNumber}</div>
+                    <div className="text-[10px] text-gray-400">{Math.round(page.width)} x {Math.round(page.height)}</div>
+                  </div>
+                </button>
+              ))}
+              {pages.length === 0 && (
+                <div className="text-center py-12 text-gray-400 text-xs">
+                  Upload a PDF to see pages
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* --- Editor Stage --- */}
+        <div className="flex-1 min-h-[800px] bg-gray-100/50 rounded-[3rem] border border-gray-100 p-8 flex items-start justify-center overflow-auto relative">
+          {isLoading && (
+            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-20 flex items-center justify-center rounded-[3rem]">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="w-12 h-12 text-[#00a884] animate-spin" />
+                <p className="text-sm font-bold text-gray-500">Processing PDF...</p>
+              </div>
+            </div>
+          )}
+          
+          {!pdfFile && !isLoading && (
+            <div className="flex flex-col items-center justify-center py-40 text-center space-y-6">
+              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <FileEdit className="w-12 h-12 text-gray-200" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900 mb-2">No PDF Selected</h3>
+                <p className="text-gray-500 max-w-xs mx-auto text-sm">
+                  Upload a PDF file to start editing, adding text, images, and annotations.
+                </p>
+              </div>
+              <Button 
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-[#00a884] hover:bg-[#008f70] text-white rounded-xl px-8"
+              >
+                Select PDF File
+              </Button>
+            </div>
+          )}
+
+          <div className={`relative shadow-2xl bg-white ${!pdfFile ? 'hidden' : ''}`}>
+            {pages.map((page) => (
+              <div 
+                key={page.pageNumber}
+                className={currentPage === page.pageNumber ? 'block' : 'hidden'}
+              >
+                <canvas 
+                  id={`pdf-canvas-${page.pageNumber}`}
+                  className="absolute top-0 left-0"
+                />
+                <canvas 
+                  id={`fabric-canvas-${page.pageNumber}`}
+                  className="relative z-10"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const WordCounter = () => {
   const [text, setText] = React.useState('');
   
@@ -1732,6 +2383,7 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
       case 'stylish-text-generator': return <StylishTextGenerator />;
       case 'text-repeater': return <TextRepeater />;
       case 'qr-code-scanner': return <QRCodeScanner />;
+      case 'pdf-editor': return <PDFEditor />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -1877,6 +2529,22 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
           "Works on both mobile and desktop devices.",
           "Privacy-focused: Scanning happens entirely in your browser.",
           "Keep track of your recent scans with the history feature."
+        ]
+      };
+    }
+    if (tool.slug === 'pdf-editor') {
+      return {
+        howToUse: [
+          "Upload your PDF file using the 'Open PDF' button.",
+          "Select a page from the sidebar to start editing.",
+          "Use the toolbar to add text, images, or draw on the PDF.",
+          "Click 'Download Edited PDF' to save your changes."
+        ],
+        benefits: [
+          "Edit PDFs directly in your browser without any installation.",
+          "Add text, images, and annotations to your documents for free.",
+          "High-quality rendering and export for professional results.",
+          "Privacy-focused: Your files never leave your browser."
         ]
       };
     }

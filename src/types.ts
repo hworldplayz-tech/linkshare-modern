@@ -230,5 +230,14 @@ export const TOOLS: Tool[] = [
     icon: 'Camera',
     category: 'Utility',
     enabled: true
+  },
+  {
+    id: 'pdf-editor',
+    title: 'PDF Editor Online',
+    slug: 'pdf-editor',
+    description: 'Edit PDF pages in-browser: add text, insert images, draw, and export high-quality PDFs.',
+    icon: 'FileEdit',
+    category: 'Document',
+    enabled: true
   }
 ];
