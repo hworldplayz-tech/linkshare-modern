@@ -103,7 +103,7 @@ export default function AdminPanel() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
-  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips' | 'ads'>('settings');
   const [loading, setLoading] = useState(true);
 
   const [newCategory, setNewCategory] = useState('');
@@ -136,7 +136,8 @@ export default function AdminPanel() {
 
     const unsubSettings = onSnapshot(doc(db, 'settings', 'main'), (doc) => {
       if (doc.exists()) {
-        setSettings(doc.data() as SiteSettings);
+        const data = doc.data() as SiteSettings;
+        setSettings({ ...DEFAULT_SETTINGS, ...data });
       }
     }, (err) => {
       handleFirestoreError(err, OperationType.GET, 'settings/main');
@@ -447,6 +448,7 @@ export default function AdminPanel() {
               { id: 'categories', label: 'Categories', icon: ListIcon },
               { id: 'countries', label: 'Countries', icon: Globe },
               { id: 'tips', label: 'Tips & Tricks', icon: BookOpen },
+              { id: 'ads', label: 'Ad Management', icon: Code },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -775,6 +777,91 @@ export default function AdminPanel() {
                       )}
                     </div>
                   ))}
+                </div>
+              </div>
+            </motion.div>
+          ) : activeTab === 'ads' ? (
+            <motion.div 
+              key="ads"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-5xl space-y-8"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-black text-gray-900">Ad Management</h2>
+                  <p className="text-gray-500 mt-1">Configure your ad scripts and placements</p>
+                </div>
+                <Button onClick={saveSettings}><Save className="w-5 h-5" /> Save Ads Configuration</Button>
+              </div>
+
+              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+                <div className="flex items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${settings.globalAdsEnabled ? 'bg-[#00a884] shadow-[#00a884]/20' : 'bg-gray-300 shadow-gray-200'}`}>
+                      <Sparkles className="text-white w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-900">Master Ad Toggle</h3>
+                      <p className="text-sm text-gray-500">Enable or disable all ads across the entire site</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSettings({...settings, globalAdsEnabled: !settings.globalAdsEnabled})}
+                    className={`w-16 h-8 rounded-full transition-all relative ${settings.globalAdsEnabled ? 'bg-[#00a884]' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${settings.globalAdsEnabled ? 'left-9' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
+                    <LayoutGrid className="w-5 h-5 text-[#00a884]" /> Ad Placements
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 gap-6">
+                    {settings.adPlacements?.map((placement, index) => (
+                      <div key={placement.id} className="bg-gray-50 p-6 rounded-3xl border border-gray-100 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${placement.enabled ? 'bg-[#00a884]/10 text-[#00a884]' : 'bg-gray-200 text-gray-400'}`}>
+                              <Code className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-gray-900">{placement.label}</h4>
+                              <span className="text-[10px] font-black uppercase tracking-wider text-gray-400">{placement.type}</span>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => {
+                              const newPlacements = [...settings.adPlacements];
+                              newPlacements[index] = { ...placement, enabled: !placement.enabled };
+                              setSettings({ ...settings, adPlacements: newPlacements });
+                            }}
+                            className={`w-12 h-6 rounded-full transition-all relative ${placement.enabled ? 'bg-[#00a884]' : 'bg-gray-300'}`}
+                          >
+                            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow-sm ${placement.enabled ? 'left-6.5' : 'left-0.5'}`} />
+                          </button>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Ad Script (HTML/JS)</label>
+                          <textarea 
+                            value={placement.script}
+                            onChange={(e) => {
+                              const newPlacements = [...settings.adPlacements];
+                              newPlacements[index] = { ...placement, script: e.target.value };
+                              setSettings({ ...settings, adPlacements: newPlacements });
+                            }}
+                            rows={4}
+                            placeholder="Paste your ad network script here..."
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>

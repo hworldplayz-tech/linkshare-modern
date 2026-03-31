@@ -20,6 +20,7 @@ import { User } from 'firebase/auth';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
+import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 
 export default function InviteDetail({ settings }: { settings: SiteSettings }) {
@@ -123,6 +124,8 @@ export default function InviteDetail({ settings }: { settings: SiteSettings }) {
         onAddClick={() => setIsAddModalOpen(true)}
       />
 
+      <AdPlacement id="global_top" settings={settings} />
+
       <main className="max-w-4xl mx-auto px-4 pt-24 pb-20">
         <div className="grid md:grid-cols-3 gap-8">
           {/* Left Column: Image & Main Info */}
@@ -132,6 +135,7 @@ export default function InviteDetail({ settings }: { settings: SiteSettings }) {
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100"
             >
+              <AdPlacement id="detail_top" settings={settings} />
               <div className="aspect-video relative bg-gray-100">
                 {group.imageUrl ? (
                   <img 
@@ -181,6 +185,7 @@ export default function InviteDetail({ settings }: { settings: SiteSettings }) {
                     {group.description || 'No detailed description provided for this community.'}
                   </p>
                 </div>
+                <AdPlacement id="detail_bottom" settings={settings} />
               </div>
             </motion.div>
 
@@ -244,10 +249,7 @@ export default function InviteDetail({ settings }: { settings: SiteSettings }) {
               )}
             </motion.div>
 
-            {/* Ad Placeholder */}
-            <div className="bg-gray-100 rounded-3xl h-64 flex items-center justify-center text-gray-400 text-xs font-bold uppercase tracking-widest border-2 border-dashed border-gray-200">
-              Advertisement
-            </div>
+            <AdPlacement id="sidebar" settings={settings} />
           </div>
         </div>
       </main>

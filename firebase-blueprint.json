@@ -45,8 +45,12 @@
         "heroTitle": { "type": "string" },
         "heroSubtitle": { "type": "string" },
         "autoApproveGroups": { "type": "boolean" },
-        "footerContent": { "type": "object" },
-        "headScripts": { "type": "string" }
+        "footerAbout": { "type": "string" },
+        "footerQuickLinks": { "type": "array", "items": { "type": "object" } },
+        "footerLegalLinks": { "type": "array", "items": { "type": "object" } },
+        "headScripts": { "type": "string" },
+        "globalAdsEnabled": { "type": "boolean" },
+        "adPlacements": { "type": "array", "items": { "type": "object" } }
       }
     },
     "Category": {

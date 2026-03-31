@@ -56,6 +56,7 @@ import { Group, SiteSettings, DEFAULT_SETTINGS, Tip } from '../types';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
+import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 
@@ -211,6 +212,7 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-gray-800 font-sans selection:bg-[#00a884] selection:text-white">
+      <AdPlacement id="global_top" settings={settings} />
       <Navbar 
         settings={settings}
         user={user}
@@ -270,6 +272,8 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
           </div>
         </header>
       )}
+
+      <AdPlacement id="home_hero_bottom" settings={settings} />
 
       {/* --- Featured Groups --- */}
       {featuredGroups.length > 0 && (
@@ -364,6 +368,8 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
               <p className="text-gray-600">Find the perfect community for your interests.</p>
             </div>
             
+            <AdPlacement id="home_groups_top" settings={settings} />
+
             <div className="flex flex-wrap items-center justify-center xl:justify-end gap-3">
               <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -511,6 +517,7 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
                   </motion.div>
                 </div>
               )}
+              <AdPlacement id="home_groups_bottom" settings={settings} />
             </div>
           ) : (
             <div className="bg-white rounded-3xl p-20 text-center border-2 border-dashed border-gray-200">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import ScrollToTop from './components/ScrollToTop';
+import AdPlacement from './components/AdPlacement';
 import { auth, db, doc, onSnapshot, setDoc, updateDoc, onAuthStateChanged, trackUserLogin } from './firebase';
 import { SiteSettings, DEFAULT_SETTINGS } from './types';
 import PublicSite from './components/PublicSite';
@@ -43,36 +44,47 @@ export default function App() {
         const needsQuickUpdate = data.footerQuickLinks?.some(link => link.href === '#');
         const needsHeaderUpdate = data.headerMenus?.some(link => link.href === '#');
 
-        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate) {
-          const updatedLegalLinks = (data.footerLegalLinks || []).map(link => {
-            const defaultLink = DEFAULT_SETTINGS.footerLegalLinks.find(d => d.label === link.label);
-            if (link.href === '#' && defaultLink) {
-              return { ...link, href: defaultLink.href };
-            }
-            return link;
-          });
+        // Migration: Ensure ad placements exist
+        const needsAdUpdate = !data.adPlacements || data.adPlacements.length === 0;
+        const needsGlobalAdUpdate = data.globalAdsEnabled === undefined;
 
-          const updatedQuickLinks = (data.footerQuickLinks || []).map(link => {
-            const defaultLink = DEFAULT_SETTINGS.footerQuickLinks.find(d => d.label === link.label);
-            if (link.href === '#' && defaultLink) {
-              return { ...link, href: defaultLink.href };
-            }
-            return link;
-          });
+        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate) {
+          const updateData: any = {};
+          
+          if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate) {
+            updateData.footerLegalLinks = (data.footerLegalLinks || []).map(link => {
+              const defaultLink = DEFAULT_SETTINGS.footerLegalLinks.find(d => d.label === link.label);
+              if (link.href === '#' && defaultLink) {
+                return { ...link, href: defaultLink.href };
+              }
+              return link;
+            });
 
-          const updatedHeaderMenus = (data.headerMenus || []).map(link => {
-            const defaultLink = DEFAULT_SETTINGS.headerMenus.find(d => d.label === link.label);
-            if (link.href === '#' && defaultLink) {
-              return { ...link, href: defaultLink.href };
-            }
-            return link;
-          });
+            updateData.footerQuickLinks = (data.footerQuickLinks || []).map(link => {
+              const defaultLink = DEFAULT_SETTINGS.footerQuickLinks.find(d => d.label === link.label);
+              if (link.href === '#' && defaultLink) {
+                return { ...link, href: defaultLink.href };
+              }
+              return link;
+            });
 
-          updateDoc(doc(db, 'settings', 'main'), { 
-            footerLegalLinks: updatedLegalLinks,
-            footerQuickLinks: updatedQuickLinks,
-            headerMenus: updatedHeaderMenus
-          });
+            updateData.headerMenus = (data.headerMenus || []).map(link => {
+              const defaultLink = DEFAULT_SETTINGS.headerMenus.find(d => d.label === link.label);
+              if (link.href === '#' && defaultLink) {
+                return { ...link, href: defaultLink.href };
+              }
+              return link;
+            });
+          }
+
+          if (needsAdUpdate) {
+            updateData.adPlacements = DEFAULT_SETTINGS.adPlacements;
+          }
+          if (needsGlobalAdUpdate) {
+            updateData.globalAdsEnabled = DEFAULT_SETTINGS.globalAdsEnabled;
+          }
+
+          updateDoc(doc(db, 'settings', 'main'), updateData);
         }
 
         // Inject head scripts
@@ -148,6 +160,9 @@ export default function App() {
       </Helmet>
 
       <ScrollToTop />
+
+      <AdPlacement id="popup" settings={settings} />
+      <AdPlacement id="social_bar" settings={settings} className="fixed bottom-0 left-0 right-0 z-50" />
 
       <Routes>
         <Route path="/" element={<PublicSite settings={settings} />} />

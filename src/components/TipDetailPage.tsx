@@ -19,6 +19,7 @@ import { User } from 'firebase/auth';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
+import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 
 interface TipDetailPageProps {
@@ -152,6 +153,8 @@ export default function TipDetailPage({ settings }: TipDetailPageProps) {
         authLoading={authLoading}
       />
 
+      <AdPlacement id="global_top" settings={settings} />
+
       {/* --- Article Header --- */}
       <header className="pt-40 pb-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4">
@@ -236,11 +239,13 @@ export default function TipDetailPage({ settings }: TipDetailPageProps) {
 
             {/* Content */}
             <div className="lg:col-span-11">
+              <AdPlacement id="tips_detail_top" settings={settings} />
               <div 
                 ref={contentRef}
                 className="prose prose-lg max-w-none prose-headings:font-black prose-headings:tracking-tight prose-p:text-gray-600 prose-a:text-[#00a884] prose-strong:text-gray-900 prose-img:rounded-[2rem]"
                 dangerouslySetInnerHTML={{ __html: tip.content }}
               />
+              <AdPlacement id="tips_detail_bottom" settings={settings} />
 
               {/* Share Section */}
               <div className="mt-20 pt-10 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-6">

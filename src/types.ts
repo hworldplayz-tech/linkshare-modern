@@ -65,6 +65,16 @@ export interface SiteSettings {
   tipsSectionImageUrl?: string;
   categories: string[];
   countries: string[];
+  globalAdsEnabled: boolean;
+  adPlacements: AdPlacement[];
+}
+
+export interface AdPlacement {
+  id: string;
+  label: string;
+  type: string;
+  enabled: boolean;
+  script: string;
 }
 
 export interface Tip {
@@ -118,4 +128,19 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   tipsSectionImageUrl: 'https://picsum.photos/seed/whatsapp-tips/800/600',
   categories: ['Tech', 'Movies', 'Education', 'Entertainment', 'Business', 'Sports', 'Gaming', 'News', 'Lifestyle', 'Other'],
   countries: ['Global', 'USA', 'Pakistan', 'India', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Other'],
+  globalAdsEnabled: false,
+  adPlacements: [
+    { id: 'global_top', label: 'Global Top Banner', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'home_hero_bottom', label: 'Home Below Hero', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'home_groups_top', label: 'Home Above Groups', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'home_groups_bottom', label: 'Home Below Groups', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'detail_top', label: 'Group Detail Top', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'detail_bottom', label: 'Group Detail Bottom', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'tips_list_top', label: 'Tips List Top', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'tips_detail_top', label: 'Tip Detail Top', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'tips_detail_bottom', label: 'Tip Detail Bottom', type: 'Banner 728x90', enabled: false, script: '' },
+    { id: 'sidebar', label: 'Sidebar Ad', type: 'Banner 300x250', enabled: false, script: '' },
+    { id: 'popup', label: 'Global Popup Ad', type: 'Popup/Interstitial', enabled: false, script: '' },
+    { id: 'social_bar', label: 'Social Bar Ad', type: 'Social Bar', enabled: false, script: '' },
+  ],
 };

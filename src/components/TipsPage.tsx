@@ -18,6 +18,7 @@ import { User } from 'firebase/auth';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
+import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 
 interface TipsPageProps {
@@ -95,9 +96,12 @@ export default function TipsPage({ settings }: TipsPageProps) {
         authLoading={authLoading}
       />
 
+      <AdPlacement id="global_top" settings={settings} />
+
       {/* --- Hero Section --- */}
       <section className="pt-40 pb-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4">
+          <AdPlacement id="tips_list_top" settings={settings} />
           <div className="max-w-3xl">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
