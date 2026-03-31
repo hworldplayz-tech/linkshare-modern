@@ -58,6 +58,7 @@ export interface SiteSettings {
   siteDescription: string;
   headerLogoText: string;
   headerLogoUrl?: string;
+  faviconUrl?: string;
   headerMenus: MenuItem[];
   heroShow: boolean;
   heroTitle: string;
@@ -103,6 +104,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   siteTitle: 'LinkShare',
   siteDescription: 'The largest WhatsApp Group Links Hub. Discover and promote your active WhatsApp groups and channels.',
   headerLogoText: 'LinkShare',
+  headerLogoUrl: '',
+  faviconUrl: '',
   headerMenus: [
     { id: '1', label: 'Home', href: '/' },
     { id: '2', label: 'About', href: '/about' },

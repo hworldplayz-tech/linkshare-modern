@@ -142,6 +142,7 @@ export default function App() {
       <Helmet>
         <title>{currentTitle}</title>
         <meta name="description" content={currentDesc} />
+        {settings.faviconUrl && <link rel="icon" href={settings.faviconUrl} />}
         
         {/* OpenGraph */}
         <meta property="og:title" content={currentTitle} />

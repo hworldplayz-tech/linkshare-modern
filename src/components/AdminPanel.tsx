@@ -528,6 +528,120 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Header Logo Image (Upload or URL)</label>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-4">
+                        {settings.headerLogoUrl && (
+                          <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center shrink-0">
+                            <img src={settings.headerLogoUrl} alt="Logo Preview" className="w-full h-full object-contain p-2" />
+                          </div>
+                        )}
+                        <div className="flex-1 relative">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setSettings({...settings, headerLogoUrl: reader.result as string});
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                            id="logo-image-upload"
+                          />
+                          <label 
+                            htmlFor="logo-image-upload"
+                            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 border-dashed rounded-xl cursor-pointer hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+                          >
+                            <Upload className="w-4 h-4" /> {settings.headerLogoUrl ? 'Change Logo' : 'Upload Logo'}
+                          </label>
+                        </div>
+                        {settings.headerLogoUrl && (
+                          <button 
+                            onClick={() => setSettings({...settings, headerLogoUrl: ''})}
+                            className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                            title="Remove Logo"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold uppercase">URL</div>
+                        <input 
+                          type="text" 
+                          value={settings.headerLogoUrl || ''}
+                          onChange={(e) => setSettings({...settings, headerLogoUrl: e.target.value})}
+                          className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                          placeholder="Or paste logo URL here..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Favicon Image (Upload or URL)</label>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-4">
+                        {settings.faviconUrl && (
+                          <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center shrink-0">
+                            <img src={settings.faviconUrl} alt="Favicon Preview" className="w-full h-full object-contain p-2" />
+                          </div>
+                        )}
+                        <div className="flex-1 relative">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setSettings({...settings, faviconUrl: reader.result as string});
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                            id="favicon-upload"
+                          />
+                          <label 
+                            htmlFor="favicon-upload"
+                            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 border-dashed rounded-xl cursor-pointer hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+                          >
+                            <Upload className="w-4 h-4" /> {settings.faviconUrl ? 'Change Favicon' : 'Upload Favicon'}
+                          </label>
+                        </div>
+                        {settings.faviconUrl && (
+                          <button 
+                            onClick={() => setSettings({...settings, faviconUrl: ''})}
+                            className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                            title="Remove Favicon"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold uppercase">URL</div>
+                        <input 
+                          type="text" 
+                          value={settings.faviconUrl || ''}
+                          onChange={(e) => setSettings({...settings, faviconUrl: e.target.value})}
+                          className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                          placeholder="Or paste favicon URL here..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Tips & Tricks Section Image (Upload or URL)</label>
                   <div className="flex flex-col gap-4">

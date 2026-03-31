@@ -1039,51 +1039,93 @@ const PDFEditor = () => {
   const [rectColor, setRectColor] = React.useState('#000000');
 
   // History for Undo/Redo
-  const [history, setHistory] = React.useState<Record<number, string[]>>({});
-  const [historyIndex, setHistoryIndex] = React.useState<Record<number, number>>({});
+  const [historyState, setHistoryState] = React.useState<Record<number, { history: string[], index: number }>>({});
+  const isUndoing = React.useRef(false);
   
   const containerRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Save state to history
   const saveHistory = (pageNumber: number, canvas: any) => {
+    if (isUndoing.current) return;
     const json = JSON.stringify(canvas.toJSON());
-    setHistory(prev => {
-      const pageHistory = prev[pageNumber] || [];
-      const currentIndex = historyIndex[pageNumber] ?? -1;
-      const newHistory = pageHistory.slice(0, currentIndex + 1);
+    setHistoryState(prev => {
+      const pageState = prev[pageNumber] || { history: [], index: -1 };
+      const newHistory = pageState.history.slice(0, pageState.index + 1);
+      
+      // Don't save if state is identical to current
+      if (newHistory.length > 0 && newHistory[newHistory.length - 1] === json) {
+        return prev;
+      }
+
       newHistory.push(json);
       // Limit history to 50 steps
       if (newHistory.length > 50) newHistory.shift();
-      return { ...prev, [pageNumber]: newHistory };
+      
+      return { 
+        ...prev, 
+        [pageNumber]: { 
+          history: newHistory, 
+          index: newHistory.length - 1 
+        } 
+      };
     });
-    setHistoryIndex(prev => ({ ...prev, [pageNumber]: (prev[pageNumber] ?? -1) + 1 }));
   };
 
   const undo = () => {
     const canvas = fabricCanvases[currentPage];
-    const pageHistory = history[currentPage];
-    const currentIndex = historyIndex[currentPage];
-    if (!canvas || !pageHistory || currentIndex <= 0) return;
+    const pageState = historyState[currentPage];
+    if (!canvas || !pageState || pageState.index <= 0) return;
 
-    const newIndex = currentIndex - 1;
-    canvas.loadFromJSON(JSON.parse(pageHistory[newIndex])).then(() => {
-      canvas.renderAll();
-      setHistoryIndex(prev => ({ ...prev, [currentPage]: newIndex }));
-    });
+    const newIndex = pageState.index - 1;
+    const stateStr = pageState.history[newIndex];
+    if (!stateStr) return;
+
+    isUndoing.current = true;
+    try {
+      const state = JSON.parse(stateStr);
+      canvas.loadFromJSON(state).then(() => {
+        canvas.renderAll();
+        setHistoryState(prev => ({
+          ...prev,
+          [currentPage]: { ...prev[currentPage], index: newIndex }
+        }));
+        isUndoing.current = false;
+      }).catch(() => {
+        isUndoing.current = false;
+      });
+    } catch (e) {
+      console.error('Undo error:', e);
+      isUndoing.current = false;
+    }
   };
 
   const redo = () => {
     const canvas = fabricCanvases[currentPage];
-    const pageHistory = history[currentPage];
-    const currentIndex = historyIndex[currentPage];
-    if (!canvas || !pageHistory || currentIndex >= pageHistory.length - 1) return;
+    const pageState = historyState[currentPage];
+    if (!canvas || !pageState || pageState.index >= pageState.history.length - 1) return;
 
-    const newIndex = currentIndex + 1;
-    canvas.loadFromJSON(JSON.parse(pageHistory[newIndex])).then(() => {
-      canvas.renderAll();
-      setHistoryIndex(prev => ({ ...prev, [currentPage]: newIndex }));
-    });
+    const newIndex = pageState.index + 1;
+    const stateStr = pageState.history[newIndex];
+    if (!stateStr) return;
+
+    isUndoing.current = true;
+    try {
+      const state = JSON.parse(stateStr);
+      canvas.loadFromJSON(state).then(() => {
+        canvas.renderAll();
+        setHistoryState(prev => ({
+          ...prev,
+          [currentPage]: { ...prev[currentPage], index: newIndex }
+        }));
+        isUndoing.current = false;
+      }).catch(() => {
+        isUndoing.current = false;
+      });
+    } catch (e) {
+      console.error('Redo error:', e);
+      isUndoing.current = false;
+    }
   };
 
   // Local Storage Persistence
@@ -1308,6 +1350,7 @@ const PDFEditor = () => {
     const canvas = fabricCanvases[currentPage];
     if (!canvas) return;
     const activeObjects = canvas.getActiveObjects();
+    if (activeObjects.length === 0) return;
     canvas.remove(...activeObjects);
     canvas.discardActiveObject().renderAll();
   };
@@ -1443,7 +1486,7 @@ const PDFEditor = () => {
         <div className="flex items-center bg-gray-50 rounded-xl p-1">
           <button 
             onClick={undo}
-            disabled={!history[currentPage] || historyIndex[currentPage] <= 0}
+            disabled={!historyState[currentPage] || historyState[currentPage].index <= 0}
             className="p-2 rounded-lg text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-all"
             title="Undo"
           >
@@ -1451,7 +1494,7 @@ const PDFEditor = () => {
           </button>
           <button 
             onClick={redo}
-            disabled={!history[currentPage] || historyIndex[currentPage] >= (history[currentPage]?.length - 1)}
+            disabled={!historyState[currentPage] || historyState[currentPage].index >= (historyState[currentPage].history.length - 1)}
             className="p-2 rounded-lg text-gray-400 hover:text-gray-600 disabled:opacity-30 transition-all"
             title="Redo"
           >
