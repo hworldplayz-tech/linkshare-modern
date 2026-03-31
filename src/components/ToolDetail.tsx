@@ -26,7 +26,16 @@ import {
   ExternalLink,
   Camera,
   Upload,
-  X
+  X,
+  Calculator,
+  BarChart3,
+  Clock,
+  Lightbulb,
+  AlignLeft,
+  Pilcrow,
+  Heading,
+  Mic,
+  Edit3
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -799,7 +808,7 @@ const StylishTextGenerator = () => {
     
     const charMap: Record<string, Record<string, string>> = {
       bold: {
-        'a': '𝐚', 'b': '𝐛', 'c': '𝐜', 'd': '𝐝', 'e': '𝐞', 'f': '𝐟', 'g': '𝐠', 'h': '𝐡', 'i': '𝐢', 'j': '𝐣', 'k': '𝐤', 'l': '������', 'm': '𝐦', 'n': '𝐧', 'o': '𝐨', 'p': '𝐩', 'q': '𝐪', 'r': '𝐫', 's': '𝐬', 't': '𝐭', 'u': '𝐮', 'v': '𝐯', 'w': '𝐰', 'x': '𝐱', 'y': '𝐲', 'z': '𝐳',
+        'a': '𝐚', 'b': '𝐛', 'c': '𝐜', 'd': '𝐝', 'e': '𝐞', 'f': '𝐟', 'g': '𝐠', 'h': '𝐡', 'i': '𝐢', 'j': '𝐣', 'k': '𝐤', 'l': '𝐥', 'm': '𝐦', 'n': '𝐧', 'o': '𝐨', 'p': '𝐩', 'q': '𝐪', 'r': '𝐫', 's': '𝐬', 't': '𝐭', 'u': '𝐮', 'v': '𝐯', 'w': '𝐰', 'x': '𝐱', 'y': '𝐲', 'z': '𝐳',
         'A': '𝐀', 'B': '𝐁', 'C': '𝐂', 'D': '𝐃', 'E': '𝐄', 'F': '𝐅', 'G': '𝐆', 'H': '𝐇', 'I': '𝐈', 'J': '𝐉', 'K': '𝐊', 'L': '𝐋', 'M': '𝐌', 'N': '𝐍', 'O': '𝐎', 'P': '𝐏', 'Q': '𝐐', 'R': '𝐑', 'S': '𝐒', 'T': '𝐓', 'U': '𝐔', 'V': '𝐕', 'W': '𝐖', 'X': '𝐗', 'Y': '𝐘', 'Z': '𝐙'
       },
       italic: {
@@ -987,6 +996,17 @@ const TextRepeater = () => {
 const WordCounter = () => {
   const [text, setText] = React.useState('');
   
+  // Restore from localStorage
+  React.useEffect(() => {
+    const saved = localStorage.getItem('wordCounterText');
+    if (saved) setText(saved);
+  }, []);
+
+  // Save to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('wordCounterText', text);
+  }, [text]);
+
   const stats = React.useMemo(() => {
     const trimmed = text.trim();
     const words = trimmed ? trimmed.split(/\s+/).length : 0;
@@ -995,24 +1015,54 @@ const WordCounter = () => {
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
     const paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0).length;
     
-    // Reading time (avg 200 wpm)
-    const readingTime = Math.ceil(words / 200);
-    // Speaking time (avg 130 wpm)
-    const speakingTime = Math.ceil(words / 130);
+    // Headings detection (lines starting with # or Title Case lines)
+    const lines = text.split('\n');
+    let headings = 0;
+    lines.forEach(line => {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('#')) {
+        headings++;
+      } else if (trimmedLine.length > 0 && trimmedLine.length < 100 && !/[.!?]$/.test(trimmedLine)) {
+        const wordsInLine = trimmedLine.split(/\s+/);
+        const capitalizedWords = wordsInLine.filter(word => /^[A-Z]/.test(word));
+        if (capitalizedWords.length >= wordsInLine.length * 0.6 && wordsInLine.length >= 2) {
+          headings++;
+        }
+      }
+    });
+
+    // Reading time (avg 225 wpm)
+    const readingTime = Math.ceil(words / 225);
+    // Speaking time (avg 115 wpm)
+    const speakingTime = Math.ceil(words / 115);
+
+    // Average lengths
+    const avgWordLength = words > 0 ? (charsNoSpaces / words).toFixed(1) : '0';
+    const avgSentenceLength = sentences > 0 ? Math.round(words / sentences) : 0;
+
+    // Longest word
+    const wordsArray = trimmed.match(/\b\w+\b/g) || [];
+    let longestWord = '-';
+    if (wordsArray.length > 0) {
+      longestWord = wordsArray.reduce((a, b) => a.length >= b.length ? a : b);
+    }
 
     // Keyword density
     const wordFreq: Record<string, number> = {};
-    const wordsArray = trimmed.toLowerCase().match(/\b\w+\b/g) || [];
     wordsArray.forEach(w => {
-      if (w.length > 3) { // Only count words longer than 3 chars
-        wordFreq[w] = (wordFreq[w] || 0) + 1;
+      const word = w.toLowerCase();
+      if (word.length > 3) {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
       }
     });
     const topKeywords = Object.entries(wordFreq)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    return { words, chars, charsNoSpaces, sentences, paragraphs, readingTime, speakingTime, topKeywords };
+    return { 
+      words, chars, charsNoSpaces, sentences, paragraphs, headings,
+      readingTime, speakingTime, avgWordLength, avgSentenceLength, longestWord, topKeywords 
+    };
   }, [text]);
 
   const handleCase = (type: 'upper' | 'lower' | 'title' | 'sentence') => {
@@ -1031,28 +1081,88 @@ const WordCounter = () => {
     setText(newText);
   };
 
-  return (
-    <div className="space-y-8">
-      <div className="bg-white rounded-[2rem] border border-gray-100 p-6 md:p-8 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <h3 className="text-xl font-black text-gray-900">Word Counter</h3>
+  const copyStats = () => {
+    const statsText = `
+📊 TEXT STATISTICS
+═══════════════════════════════
+
+📝 Basic Counts:
+   • Total Words: ${stats.words}
+   • Total Characters: ${stats.chars}
+   • Characters (No Spaces): ${stats.charsNoSpaces}
+   • Total Sentences: ${stats.sentences}
+   • Total Headings: ${stats.headings}
+   • Total Paragraphs: ${stats.paragraphs}
+
+⏱️ Time Estimates:
+   • Reading Time: ${stats.readingTime} min
+   • Speaking Time: ${stats.speakingTime} min
+
+💡 Additional Insights:
+   • Average Word Length: ${stats.avgWordLength} characters
+   • Average Sentence Length: ${stats.avgSentenceLength} words
+   • Longest Word: ${stats.longestWord}
+
+Generated by LinkShare Word Counter
+${window.location.href}
+    `.trim();
+
+    navigator.clipboard.writeText(statsText);
+    alert('Statistics copied to clipboard!');
+  };
+
+  // Progress bar helper
+  const renderProgressBar = (label: string, value: number, max: number, color: string, Icon: any) => {
+    const percentage = Math.min((value / max) * 100, 100);
+    return (
+      <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm transition-all hover:shadow-md group">
+        <div className="flex items-center gap-4 mb-4">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color} text-white shadow-lg`}>
+            <Icon className="w-6 h-6" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</div>
+            <div className="text-2xl font-black text-gray-900">{value}</div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${percentage}%` }}
+              className={`h-full ${color.replace('bg-', 'bg-')}`}
+              style={{ backgroundColor: color.includes('00a884') ? '#00a884' : undefined }}
+            />
+          </div>
+          <div className="text-[10px] font-bold text-gray-400 text-right">{Math.round(percentage)}%</div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-10">
+      {/* --- Input Area --- */}
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-12 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#00a884]/10 rounded-xl flex items-center justify-center">
+              <Edit3 className="w-5 h-5 text-[#00a884]" />
+            </div>
+            <h3 className="text-xl font-black text-gray-900 tracking-tight">Text Analysis Tool</h3>
+          </div>
+          <div className="flex items-center gap-3">
             <button 
-              onClick={() => {
-                navigator.clipboard.writeText(text);
-                alert('Copied to clipboard!');
-              }}
-              className="p-2 text-gray-400 hover:text-[#00a884] transition-colors"
-              title="Copy text"
+              onClick={copyStats}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl text-xs font-bold transition-all"
             >
-              <Copy className="w-5 h-5" />
+              <Copy className="w-4 h-4" /> Copy Stats
             </button>
             <button 
-              onClick={() => setText('')}
+              onClick={() => {
+                if (window.confirm('Clear all text?')) setText('');
+              }}
               className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-              title="Clear text"
             >
               <Trash2 className="w-5 h-5" />
             </button>
@@ -1062,78 +1172,91 @@ const WordCounter = () => {
         <textarea 
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Type or paste your text here..."
-          className="w-full h-64 md:h-80 p-6 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all resize-none text-gray-700 leading-relaxed"
+          placeholder="Start typing or paste your text here to analyze words, characters, sentences, and headings..."
+          className="w-full h-80 p-8 bg-gray-50 border-2 border-transparent rounded-[2rem] focus:bg-white focus:border-[#00a884]/30 focus:ring-8 focus:ring-[#00a884]/5 outline-none transition-all resize-none text-gray-700 leading-relaxed text-lg"
         />
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button onClick={() => handleCase('upper')} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-600 transition-colors">UPPERCASE</button>
-          <button onClick={() => handleCase('lower')} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-600 transition-colors">lowercase</button>
-          <button onClick={() => handleCase('title')} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-600 transition-colors">Title Case</button>
-          <button onClick={() => handleCase('sentence')} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-600 transition-colors">Sentence case</button>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <button onClick={() => handleCase('upper')} className="px-6 py-3 bg-white border border-gray-100 hover:border-[#00a884]/30 hover:bg-gray-50 rounded-xl text-xs font-black text-gray-600 transition-all shadow-sm">UPPERCASE</button>
+          <button onClick={() => handleCase('lower')} className="px-6 py-3 bg-white border border-gray-100 hover:border-[#00a884]/30 hover:bg-gray-50 rounded-xl text-xs font-black text-gray-600 transition-all shadow-sm">lowercase</button>
+          <button onClick={() => handleCase('title')} className="px-6 py-3 bg-white border border-gray-100 hover:border-[#00a884]/30 hover:bg-gray-50 rounded-xl text-xs font-black text-gray-600 transition-all shadow-sm">Title Case</button>
+          <button onClick={() => handleCase('sentence')} className="px-6 py-3 bg-white border border-gray-100 hover:border-[#00a884]/30 hover:bg-gray-50 rounded-xl text-xs font-black text-gray-600 transition-all shadow-sm">Sentence case</button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-center">
-          <div className="text-3xl font-black text-[#00a884] mb-1">{stats.words}</div>
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Words</div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-center">
-          <div className="text-3xl font-black text-blue-600 mb-1">{stats.chars}</div>
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Characters</div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-center">
-          <div className="text-3xl font-black text-purple-600 mb-1">{stats.sentences}</div>
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Sentences</div>
-        </div>
-        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm text-center">
-          <div className="text-3xl font-black text-orange-600 mb-1">{stats.paragraphs}</div>
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider">Paragraphs</div>
-        </div>
+      {/* --- Stats Grid --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {renderProgressBar('Total Words', stats.words, 1000, 'bg-[#00a884]', FileText)}
+        {renderProgressBar('Total Characters', stats.chars, 5000, 'bg-blue-600', Type)}
+        {renderProgressBar('Characters (No Spaces)', stats.charsNoSpaces, 4000, 'bg-purple-600', AlignLeft)}
+        {renderProgressBar('Total Sentences', stats.sentences, 50, 'bg-orange-600', Pilcrow)}
+        {renderProgressBar('Total Headings', stats.headings, 20, 'bg-pink-600', Heading)}
+        {renderProgressBar('Reading Time', stats.readingTime, 10, 'bg-indigo-600', Clock)}
       </div>
 
+      {/* --- Insights Section --- */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white rounded-[2rem] border border-gray-100 p-8 shadow-sm">
-          <h3 className="text-lg font-black text-gray-900 mb-6">Detailed Statistics</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <span className="text-gray-500 font-medium">Characters (no spaces)</span>
-              <span className="font-bold text-gray-900">{stats.charsNoSpaces}</span>
+        <div className="lg:col-span-2 bg-white rounded-[2.5rem] border border-gray-100 p-10 shadow-sm">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-yellow-400/10 rounded-xl flex items-center justify-center">
+              <Lightbulb className="w-5 h-5 text-yellow-500" />
             </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <span className="text-gray-500 font-medium">Estimated Reading Time</span>
-              <span className="font-bold text-gray-900">{stats.readingTime} min</span>
+            <h3 className="text-xl font-black text-gray-900 tracking-tight">Additional Insights</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-6 bg-gray-50 rounded-2xl flex items-center justify-between group hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100">
+              <span className="text-sm font-bold text-gray-500">Avg. Word Length</span>
+              <span className="text-lg font-black text-[#00a884]">{stats.avgWordLength} chars</span>
             </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <span className="text-gray-500 font-medium">Estimated Speaking Time</span>
-              <span className="font-bold text-gray-900">{stats.speakingTime} min</span>
+            <div className="p-6 bg-gray-50 rounded-2xl flex items-center justify-between group hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100">
+              <span className="text-sm font-bold text-gray-500">Avg. Sentence Length</span>
+              <span className="text-lg font-black text-blue-600">{stats.avgSentenceLength} words</span>
+            </div>
+            <div className="p-6 bg-gray-50 rounded-2xl flex items-center justify-between group hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100">
+              <span className="text-sm font-bold text-gray-500">Speaking Time</span>
+              <span className="text-lg font-black text-purple-600">{stats.speakingTime} min</span>
+            </div>
+            <div className="p-6 bg-gray-50 rounded-2xl flex items-center justify-between group hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100">
+              <span className="text-sm font-bold text-gray-500">Longest Word</span>
+              <span className="text-sm font-black text-orange-600 truncate max-w-[120px]">{stats.longestWord}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-gray-900 rounded-[2rem] p-8 text-white">
-          <h3 className="text-lg font-black mb-6">Keyword Density</h3>
-          {stats.topKeywords.length > 0 ? (
-            <div className="space-y-4">
-              {stats.topKeywords.map(([word, count]) => (
-                <div key={word} className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm capitalize">{word}</span>
-                  <div className="flex items-center gap-3">
-                    <div className="w-24 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div 
+        <div className="bg-gray-900 rounded-[2.5rem] p-10 text-white shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16" />
+          <div className="relative z-10">
+            <h3 className="text-xl font-black mb-8 flex items-center gap-3">
+              <BarChart3 className="w-5 h-5 text-[#00a884]" /> Keyword Density
+            </h3>
+            {stats.topKeywords.length > 0 ? (
+              <div className="space-y-6">
+                {stats.topKeywords.map(([word, count]) => (
+                  <div key={word} className="space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="capitalize text-gray-400">{word}</span>
+                      <span className="text-[#00a884]">{count} times</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(count / stats.words) * 100 * 5}%` }}
                         className="h-full bg-[#00a884]" 
-                        style={{ width: `${(count / stats.words) * 100 * 5}%` }}
                       />
                     </div>
-                    <span className="text-xs font-bold">{count}</span>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-40 text-center space-y-4">
+                <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center">
+                  <Type className="w-6 h-6 text-gray-600" />
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">Enter more text to see keyword density.</p>
-          )}
+                <p className="text-gray-500 text-sm">Enter more text to see keyword density.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
