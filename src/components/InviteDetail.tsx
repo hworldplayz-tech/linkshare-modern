@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Info
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { User } from 'firebase/auth';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';

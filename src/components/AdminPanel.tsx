@@ -55,7 +55,7 @@ import {
 import { Group, SiteSettings, MenuItem, DEFAULT_SETTINGS, Category, Country, Tip } from '../types';
 import { TIPS } from '../data/tips';
 import { DEFAULT_GROUPS } from '../data/groups';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 
 const Button = ({ 
   children, 

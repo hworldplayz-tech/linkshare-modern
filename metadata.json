@@ -1,5 +1,5 @@
 {
   "name": "LinkShare",
   "description": "The largest WhatsApp Group Links Hub. Discover and promote your active WhatsApp groups and channels.",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["camera"]
 }

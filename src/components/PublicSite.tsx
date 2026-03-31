@@ -27,6 +27,7 @@ import {
   Type,
   Calculator,
   Scan,
+  Cpu,
   Scissors,
   FileJson,
   Music,
@@ -36,7 +37,7 @@ import {
   List,
   Share2
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { 
   auth, 
   db, 
@@ -52,7 +53,7 @@ import {
   User,
   doc
 } from '../firebase';
-import { Group, SiteSettings, DEFAULT_SETTINGS, Tip } from '../types';
+import { Group, SiteSettings, DEFAULT_SETTINGS, Tip, TOOLS } from '../types';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
@@ -68,26 +69,25 @@ const Card = ({ children, className, ...props }: { children: React.ReactNode; cl
   </div>
 );
 
-const TOOLS = [
-  { id: 'plagiarism', name: 'Plagiarism Checker', icon: Zap, desc: 'Ensure your content is 100% original.' },
-  { id: 'ai-detector', name: 'AI Detector', icon: Zap, desc: 'Detect AI-generated content easily.' },
-  { id: 'word-counter', name: 'Word Counter', icon: FileText, desc: 'Count words, characters, and more.' },
-  { id: 'cv-maker', name: 'CV Maker', icon: LayoutGrid, desc: 'Create professional resumes in minutes.' },
-  { id: 'image-to-pdf', name: 'Image to PDF', icon: ImageIcon, desc: 'Convert images to high-quality PDF.' },
-  { id: 'pdf-merger', name: 'PDF Merger', icon: FileJson, desc: 'Combine multiple PDF files into one.' },
-  { id: 'pdf-editor', name: 'PDF Editor', icon: Scissors, desc: 'Edit, annotate, and sign PDF documents.' },
-  { id: 'image-editor', name: 'Image Editor', icon: Sparkles, desc: 'Crop, resize, and enhance your photos.' },
-  { id: 'fake-chat', name: 'Fake Chat Screenshot', icon: MessageSquare, desc: 'Create realistic-looking fake chats.' },
-  { id: 'stylish-text', name: 'Stylish Text Generator', icon: Type, desc: 'Generate cool, fancy text styles.' },
-  { id: 'qr-generator', name: 'QR Code Generator', icon: QrCode, desc: 'Create custom QR codes for URLs.' },
-  { id: 'qr-scanner', name: 'QR Code Scanner', icon: Scan, desc: 'Scan and read QR codes instantly.' },
-  { id: 'short-url', name: 'Short URL Generator', icon: LinkIcon, desc: 'Shorten messy URLs into clean links.' },
-  { id: 'doc-converter', name: 'Document Converter', icon: FileText, desc: 'Convert documents between formats.' },
-  { id: 'm3u-player', name: 'M3U Playlist Viewer', icon: Music, desc: 'Stream and read M3U IPTV playlists.' },
-  { id: 'math-solver', name: 'Math Problem Solver', icon: Calculator, desc: 'Get step-by-step solutions to math.' },
-  { id: 'yt-downloader', name: 'YouTube Thumbnail', icon: Youtube, desc: 'Download high-quality thumbnails.' },
-  { id: 'text-repeater', name: 'Text Repeater', icon: Type, desc: 'Repeat text or emojis up to 10k times.' },
-];
+const iconMap: Record<string, any> = {
+  Search,
+  QrCode,
+  Type,
+  Link: LinkIcon,
+  Cpu,
+  Zap,
+  FileText,
+  LayoutGrid,
+  ImageIcon,
+  FileJson,
+  Scissors,
+  Sparkles,
+  MessageSquare,
+  Scan,
+  Music,
+  Calculator,
+  Youtube
+};
 
 export default function PublicSite({ settings }: { settings: SiteSettings }) {
   const navigate = useNavigate();
@@ -333,26 +333,29 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {TOOLS.map((tool) => (
-              <Card 
-                key={tool.id} 
-                className="p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
-                onClick={() => navigate(`/tools/${tool.id}`)}
-              >
-                <div className="flex gap-4">
-                  <div className="w-14 h-14 bg-[#00a884]/10 rounded-2xl flex items-center justify-center group-hover:bg-[#00a884] transition-colors">
-                    <tool.icon className="w-7 h-7 text-[#00a884] group-hover:text-white transition-colors" />
+            {TOOLS.filter(t => t.enabled).map((tool) => {
+              const Icon = iconMap[tool.icon] || Zap;
+              return (
+                <Card 
+                  key={tool.id} 
+                  className="p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                  onClick={() => navigate(`/tools/${tool.slug}`)}
+                >
+                  <div className="flex gap-4">
+                    <div className="w-14 h-14 bg-[#00a884]/10 rounded-2xl flex items-center justify-center group-hover:bg-[#00a884] transition-colors">
+                      <Icon className="w-7 h-7 text-[#00a884] group-hover:text-white transition-colors" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg mb-1">{tool.title}</h3>
+                      <p className="text-sm text-gray-500 leading-relaxed">{tool.description}</p>
+                      <button className="mt-4 text-[#00a884] text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Try Now <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">{tool.name}</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">{tool.desc}</p>
-                    <button className="mt-4 text-[#00a884] text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                      Try Now <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>

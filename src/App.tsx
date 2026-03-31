@@ -15,7 +15,8 @@ import TermsPage from './components/TermsPage';
 import DisclaimerPage from './components/DisclaimerPage';
 import TipsPage from './components/TipsPage';
 import TipDetailPage from './components/TipDetailPage';
-import ToolPage from './components/ToolPage';
+import ToolsPage from './components/ToolsPage';
+import ToolDetail from './components/ToolDetail';
 
 export default function App() {
   // Load initial settings from localStorage if available for instant feel
@@ -40,12 +41,12 @@ export default function App() {
         localStorage.setItem('site_settings', JSON.stringify(data));
         
         // Migration: Ensure legal links are correct if they are placeholders
-        const needsLegalUpdate = data.footerLegalLinks?.some(link => link.href === '#');
-        const needsQuickUpdate = data.footerQuickLinks?.some(link => link.href === '#');
-        const needsHeaderUpdate = data.headerMenus?.some(link => link.href === '#');
+        const needsLegalUpdate = data.footerLegalLinks?.some(link => link.href === '#' || link.href === '/#groups' || link.href === '#groups' || link.href === '#tools');
+        const needsQuickUpdate = data.footerQuickLinks?.some(link => link.href === '#' || link.href === '/#groups' || link.href === '#groups' || link.href === '#tools');
+        const needsHeaderUpdate = data.headerMenus?.some(link => link.href === '#' || link.href === '/#groups' || link.href === '#groups' || link.href === '#tools');
 
         // Migration: Ensure ad placements exist
-        const needsAdUpdate = !data.adPlacements || data.adPlacements.length === 0;
+        const needsAdUpdate = !data.adPlacements || data.adPlacements.length < DEFAULT_SETTINGS.adPlacements.length;
         const needsGlobalAdUpdate = data.globalAdsEnabled === undefined;
 
         if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate) {
@@ -54,7 +55,7 @@ export default function App() {
           if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate) {
             updateData.footerLegalLinks = (data.footerLegalLinks || []).map(link => {
               const defaultLink = DEFAULT_SETTINGS.footerLegalLinks.find(d => d.label === link.label);
-              if (link.href === '#' && defaultLink) {
+              if ((link.href === '#' || link.href === '/#groups' || link.href === '#groups' || link.href === '#tools') && defaultLink) {
                 return { ...link, href: defaultLink.href };
               }
               return link;
@@ -62,7 +63,7 @@ export default function App() {
 
             updateData.footerQuickLinks = (data.footerQuickLinks || []).map(link => {
               const defaultLink = DEFAULT_SETTINGS.footerQuickLinks.find(d => d.label === link.label);
-              if (link.href === '#' && defaultLink) {
+              if ((link.href === '#' || link.href === '/#groups' || link.href === '#groups' || link.href === '#tools') && defaultLink) {
                 return { ...link, href: defaultLink.href };
               }
               return link;
@@ -70,7 +71,7 @@ export default function App() {
 
             updateData.headerMenus = (data.headerMenus || []).map(link => {
               const defaultLink = DEFAULT_SETTINGS.headerMenus.find(d => d.label === link.label);
-              if (link.href === '#' && defaultLink) {
+              if ((link.href === '#' || link.href === '/#groups' || link.href === '#groups' || link.href === '#tools') && defaultLink) {
                 return { ...link, href: defaultLink.href };
               }
               return link;
@@ -173,7 +174,8 @@ export default function App() {
         <Route path="/disclaimer" element={<DisclaimerPage settings={settings} />} />
         <Route path="/tips-tricks" element={<TipsPage settings={settings} />} />
         <Route path="/tips-tricks/:slug" element={<TipDetailPage settings={settings} />} />
-        <Route path="/tools/:toolId" element={<ToolPage settings={settings} />} />
+        <Route path="/tools" element={<ToolsPage settings={settings} />} />
+        <Route path="/tools/:slug" element={<ToolDetail settings={settings} />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/invite/:id" element={<InviteDetail settings={settings} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
