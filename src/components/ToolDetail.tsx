@@ -510,6 +510,7 @@ const QRCodeGenerator = () => {
 const QRCodeScanner = () => {
   const [scanResult, setScanResult] = React.useState<string | null>(null);
   const [isScanning, setIsScanning] = React.useState(false);
+  const [isInitializing, setIsInitializing] = React.useState(false);
   const [scanHistory, setScanHistory] = React.useState<string[]>([]);
   const [activeTab, setActiveTab] = React.useState<'camera' | 'upload'>('camera');
   const [error, setError] = React.useState<string | null>(null);
@@ -523,11 +524,18 @@ const QRCodeScanner = () => {
     }
 
     return () => {
-      if (scannerRef.current && scannerRef.current.isScanning) {
+      if (scannerRef.current) {
         scannerRef.current.stop().catch(console.error);
       }
     };
   }, []);
+
+  // Stop camera when switching tabs
+  React.useEffect(() => {
+    if (activeTab !== 'camera' && isScanning) {
+      stopCamera();
+    }
+  }, [activeTab]);
 
   const saveToHistory = (result: string) => {
     setScanHistory(prev => {
@@ -539,12 +547,13 @@ const QRCodeScanner = () => {
 
   const startCamera = async () => {
     try {
+      setIsInitializing(true);
+      setError(null);
+      setScanResult(null);
+
       const html5QrCode = new Html5Qrcode("qr-reader");
       scannerRef.current = html5QrCode;
-      setIsScanning(true);
-      setScanResult(null);
-      setError(null);
-
+      
       await html5QrCode.start(
         { facingMode: "environment" },
         {
@@ -558,10 +567,14 @@ const QRCodeScanner = () => {
         },
         () => {} // Ignore errors
       );
+      
+      setIsScanning(true);
+      setIsInitializing(false);
     } catch (err) {
       console.error("Error starting camera:", err);
       setError("Could not access camera. Please check permissions.");
       setIsScanning(false);
+      setIsInitializing(false);
     }
   };
 
@@ -639,9 +652,16 @@ const QRCodeScanner = () => {
 
           {activeTab === 'camera' ? (
             <div className="space-y-6">
-              <div id="qr-reader" className="overflow-hidden rounded-3xl bg-black aspect-square max-w-sm mx-auto relative">
-                {!isScanning && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center space-y-4">
+              <div className="overflow-hidden rounded-3xl bg-black aspect-square max-w-sm mx-auto relative">
+                <div id="qr-reader" className="w-full h-full"></div>
+                {isInitializing && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center space-y-4 bg-black/80 z-10">
+                    <Loader2 className="w-10 h-10 animate-spin text-[#00a884]" />
+                    <p className="font-bold">Initializing Camera...</p>
+                  </div>
+                )}
+                {!isScanning && !isInitializing && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-8 text-center space-y-4 bg-black/60">
                     <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center">
                       <Camera className="w-8 h-8" />
                     </div>
@@ -653,9 +673,10 @@ const QRCodeScanner = () => {
                 {!isScanning ? (
                   <Button 
                     onClick={startCamera}
+                    disabled={isInitializing}
                     className="bg-[#00a884] text-white hover:bg-[#008f6f] px-12 py-4 font-black rounded-2xl shadow-xl shadow-[#00a884]/20"
                   >
-                    Start Camera
+                    {isInitializing ? "Starting..." : "Start Camera"}
                   </Button>
                 ) : (
                   <Button 
@@ -778,7 +799,7 @@ const StylishTextGenerator = () => {
     
     const charMap: Record<string, Record<string, string>> = {
       bold: {
-        'a': '𝐚', 'b': '𝐛', 'c': '𝐜', 'd': '𝐝', 'e': '𝐞', 'f': '𝐟', 'g': '𝐠', 'h': '𝐡', 'i': '𝐢', 'j': '𝐣', 'k': '𝐤', 'l': '𝐥', 'm': '𝐦', 'n': '𝐧', 'o': '𝐨', 'p': '𝐩', 'q': '𝐪', 'r': '𝐫', 's': '𝐬', 't': '𝐭', 'u': '𝐮', 'v': '𝐯', 'w': '𝐰', 'x': '𝐱', 'y': '𝐲', 'z': '𝐳',
+        'a': '𝐚', 'b': '𝐛', 'c': '𝐜', 'd': '𝐝', 'e': '𝐞', 'f': '𝐟', 'g': '𝐠', 'h': '𝐡', 'i': '𝐢', 'j': '𝐣', 'k': '𝐤', 'l': '������', 'm': '𝐦', 'n': '𝐧', 'o': '𝐨', 'p': '𝐩', 'q': '𝐪', 'r': '𝐫', 's': '𝐬', 't': '𝐭', 'u': '𝐮', 'v': '𝐯', 'w': '𝐰', 'x': '𝐱', 'y': '𝐲', 'z': '𝐳',
         'A': '𝐀', 'B': '𝐁', 'C': '𝐂', 'D': '𝐃', 'E': '𝐄', 'F': '𝐅', 'G': '𝐆', 'H': '𝐇', 'I': '𝐈', 'J': '𝐉', 'K': '𝐊', 'L': '𝐋', 'M': '𝐌', 'N': '𝐍', 'O': '𝐎', 'P': '𝐏', 'Q': '𝐐', 'R': '𝐑', 'S': '𝐒', 'T': '𝐓', 'U': '𝐔', 'V': '𝐕', 'W': '𝐖', 'X': '𝐗', 'Y': '𝐘', 'Z': '𝐙'
       },
       italic: {
