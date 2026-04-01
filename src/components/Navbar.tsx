@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -8,7 +8,8 @@ import {
   LogIn, 
   LogOut, 
   AlertCircle,
-  Loader2
+  Loader2,
+  ChevronDown
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { SiteSettings } from '../types';
@@ -34,6 +35,18 @@ export const Navbar = ({
   authLoading 
 }: NavbarProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [openMobileMenu, setOpenMobileMenu] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
 
   return (
     <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100">
@@ -47,11 +60,45 @@ export const Navbar = ({
 
         <div className="hidden xl:flex items-center gap-8 text-sm font-medium text-gray-600 flex-nowrap">
           {settings.headerMenus.map(menu => (
-            menu.href.startsWith('/') ? (
-              <Link key={menu.id} to={menu.href} className="hover:text-[#00a884] transition-colors whitespace-nowrap">{menu.label}</Link>
-            ) : (
-              <a key={menu.id} href={menu.href} className="hover:text-[#00a884] transition-colors whitespace-nowrap">{menu.label}</a>
-            )
+            <div key={menu.id} className="relative group">
+              {menu.dropdown && menu.dropdown.length > 0 ? (
+                <>
+                  <button className="flex items-center gap-1 hover:text-[#00a884] transition-colors whitespace-nowrap py-4">
+                    {menu.label}
+                    <ChevronDown className="w-4 h-4 group-hover:rotate-180 transition-transform" />
+                  </button>
+                  <div className="absolute top-full left-0 pt-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 z-50">
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 py-3 min-w-[200px]">
+                      {menu.dropdown.map(drop => (
+                        drop.href.startsWith('/') ? (
+                          <Link 
+                            key={drop.id} 
+                            to={drop.href} 
+                            className="block px-6 py-2.5 hover:bg-gray-50 hover:text-[#00a884] transition-colors"
+                          >
+                            {drop.label}
+                          </Link>
+                        ) : (
+                          <a 
+                            key={drop.id} 
+                            href={drop.href} 
+                            className="block px-6 py-2.5 hover:bg-gray-50 hover:text-[#00a884] transition-colors"
+                          >
+                            {drop.label}
+                          </a>
+                        )
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                menu.href.startsWith('/') ? (
+                  <Link to={menu.href} className="hover:text-[#00a884] transition-colors whitespace-nowrap py-4 block">{menu.label}</Link>
+                ) : (
+                  <a href={menu.href} className="hover:text-[#00a884] transition-colors whitespace-nowrap py-4 block">{menu.label}</a>
+                )
+              )}
+            </div>
           ))}
         </div>
 
@@ -92,28 +139,71 @@ export const Navbar = ({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="xl:hidden bg-white border-t border-gray-100 overflow-hidden"
+            className="xl:hidden bg-white border-t border-gray-100 overflow-y-auto max-h-[calc(100vh-64px)]"
           >
             <div className="p-4 space-y-4">
               {settings.headerMenus.map(menu => (
-                menu.href.startsWith('/') ? (
-                  <Link 
-                    key={menu.id} 
-                    to={menu.href} 
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-4 py-2 text-gray-600 font-bold hover:bg-gray-50 rounded-xl"
-                  >
-                    {menu.label}
-                  </Link>
-                ) : (
-                  <a 
-                    key={menu.id} 
-                    href={menu.href} 
-                    className="block px-4 py-2 text-gray-600 font-bold hover:bg-gray-50 rounded-xl"
-                  >
-                    {menu.label}
-                  </a>
-                )
+                <div key={menu.id}>
+                  {menu.dropdown && menu.dropdown.length > 0 ? (
+                    <div className="space-y-1">
+                      <button 
+                        onClick={() => setOpenMobileMenu(openMobileMenu === menu.id ? null : menu.id)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-gray-600 font-bold hover:bg-gray-50 rounded-xl transition-colors"
+                      >
+                        {menu.label}
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${openMobileMenu === menu.id ? 'rotate-180' : ''}`} />
+                      </button>
+                      <AnimatePresence>
+                        {openMobileMenu === menu.id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="pl-6 space-y-1 overflow-hidden"
+                          >
+                            {menu.dropdown.map(drop => (
+                              drop.href.startsWith('/') ? (
+                                <Link 
+                                  key={drop.id} 
+                                  to={drop.href} 
+                                  onClick={() => setIsMenuOpen(false)}
+                                  className="block px-4 py-2.5 text-gray-500 font-medium hover:text-[#00a884] transition-colors"
+                                >
+                                  {drop.label}
+                                </Link>
+                              ) : (
+                                <a 
+                                  key={drop.id} 
+                                  href={drop.href} 
+                                  className="block px-4 py-2.5 text-gray-500 font-medium hover:text-[#00a884] transition-colors"
+                                >
+                                  {drop.label}
+                                </a>
+                              )
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    menu.href.startsWith('/') ? (
+                      <Link 
+                        to={menu.href} 
+                        onClick={() => setIsMenuOpen(false)}
+                        className="block px-4 py-3 text-gray-600 font-bold hover:bg-gray-50 rounded-xl transition-colors"
+                      >
+                        {menu.label}
+                      </Link>
+                    ) : (
+                      <a 
+                        href={menu.href} 
+                        className="block px-4 py-3 text-gray-600 font-bold hover:bg-gray-50 rounded-xl transition-colors"
+                      >
+                        {menu.label}
+                      </a>
+                    )
+                  )}
+                </div>
               ))}
               <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
                 {user ? (

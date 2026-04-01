@@ -31,7 +31,8 @@ import {
   ArrowRight,
   MessageCircle,
   Clock,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Menu
 } from 'lucide-react';
 import { 
   db, 
@@ -103,7 +104,7 @@ export default function AdminPanel() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
-  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips' | 'ads'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips' | 'ads' | 'menus'>('settings');
   const [loading, setLoading] = useState(true);
 
   const [newCategory, setNewCategory] = useState('');
@@ -265,6 +266,82 @@ export default function AdminPanel() {
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `countries/${id}`);
     }
+  };
+
+  const addHeaderMenu = () => {
+    const newItem = { id: Date.now().toString(), label: 'New Menu', href: '#' };
+    setSettings({ ...settings, headerMenus: [...settings.headerMenus, newItem] });
+  };
+
+  const updateHeaderMenu = (index: number, updatedItem: any) => {
+    const newMenus = [...settings.headerMenus];
+    newMenus[index] = updatedItem;
+    setSettings({ ...settings, headerMenus: newMenus });
+  };
+
+  const deleteHeaderMenu = (index: number) => {
+    const newMenus = settings.headerMenus.filter((_, i) => i !== index);
+    setSettings({ ...settings, headerMenus: newMenus });
+  };
+
+  const addDropdownItem = (menuIndex: number) => {
+    const newMenus = [...settings.headerMenus];
+    const menu = { ...newMenus[menuIndex] };
+    const newDropdown = [...(menu.dropdown || []), { id: Date.now().toString(), label: 'Sub Menu', href: '#' }];
+    menu.dropdown = newDropdown;
+    newMenus[menuIndex] = menu;
+    setSettings({ ...settings, headerMenus: newMenus });
+  };
+
+  const updateDropdownItem = (menuIndex: number, dropIndex: number, updatedDrop: any) => {
+    const newMenus = [...settings.headerMenus];
+    const menu = { ...newMenus[menuIndex] };
+    const newDropdown = [...(menu.dropdown || [])];
+    newDropdown[dropIndex] = updatedDrop;
+    menu.dropdown = newDropdown;
+    newMenus[menuIndex] = menu;
+    setSettings({ ...settings, headerMenus: newMenus });
+  };
+
+  const deleteDropdownItem = (menuIndex: number, dropIndex: number) => {
+    const newMenus = [...settings.headerMenus];
+    const menu = { ...newMenus[menuIndex] };
+    const newDropdown = menu.dropdown?.filter((_, i) => i !== dropIndex);
+    menu.dropdown = newDropdown;
+    newMenus[menuIndex] = menu;
+    setSettings({ ...settings, headerMenus: newMenus });
+  };
+
+  const addFooterQuickLink = () => {
+    const newItem = { id: Date.now().toString(), label: 'New Link', href: '#' };
+    setSettings({ ...settings, footerQuickLinks: [...settings.footerQuickLinks, newItem] });
+  };
+
+  const updateFooterQuickLink = (index: number, updatedItem: any) => {
+    const newLinks = [...settings.footerQuickLinks];
+    newLinks[index] = updatedItem;
+    setSettings({ ...settings, footerQuickLinks: newLinks });
+  };
+
+  const deleteFooterQuickLink = (index: number) => {
+    const newLinks = settings.footerQuickLinks.filter((_, i) => i !== index);
+    setSettings({ ...settings, footerQuickLinks: newLinks });
+  };
+
+  const addFooterLegalLink = () => {
+    const newItem = { id: Date.now().toString(), label: 'New Link', href: '#' };
+    setSettings({ ...settings, footerLegalLinks: [...settings.footerLegalLinks, newItem] });
+  };
+
+  const updateFooterLegalLink = (index: number, updatedItem: any) => {
+    const newLinks = [...settings.footerLegalLinks];
+    newLinks[index] = updatedItem;
+    setSettings({ ...settings, footerLegalLinks: newLinks });
+  };
+
+  const deleteFooterLegalLink = (index: number) => {
+    const newLinks = settings.footerLegalLinks.filter((_, i) => i !== index);
+    setSettings({ ...settings, footerLegalLinks: newLinks });
   };
 
   const saveTip = async () => {
@@ -434,15 +511,22 @@ export default function AdminPanel() {
       <aside className="w-72 bg-white border-r border-gray-100 hidden lg:flex flex-col sticky top-0 h-screen">
         <div className="p-8">
           <div className="flex items-center gap-2 mb-8">
-            <div className="w-10 h-10 bg-[#00a884] rounded-xl flex items-center justify-center shadow-lg shadow-[#00a884]/20">
-              <ShieldCheck className="text-white w-6 h-6" />
-            </div>
-            <span className="text-2xl font-black tracking-tighter text-[#00a884]">Admin</span>
+            {settings.headerLogoUrl ? (
+              <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                <img src={settings.headerLogoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
+              </div>
+            ) : (
+              <div className="w-10 h-10 bg-[#00a884] rounded-xl flex items-center justify-center shadow-lg shadow-[#00a884]/20">
+                <ShieldCheck className="text-white w-6 h-6" />
+              </div>
+            )}
+            <span className="text-2xl font-black tracking-tighter text-[#00a884]">{settings.headerLogoText || 'Admin'}</span>
           </div>
 
           <nav className="space-y-2">
             {[
               { id: 'settings', label: 'Site Settings', icon: SettingsIcon },
+              { id: 'menus', label: 'Menus', icon: Menu },
               { id: 'groups', label: 'Groups', icon: LayoutGrid },
               { id: 'users', label: 'Users', icon: Users },
               { id: 'categories', label: 'Categories', icon: ListIcon },
@@ -545,6 +629,10 @@ export default function AdminPanel() {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
+                                if (file.size > 1024 * 1024) {
+                                  alert('Logo image must be less than 1MB');
+                                  return;
+                                }
                                 const reader = new FileReader();
                                 reader.onloadend = () => {
                                   setSettings({...settings, headerLogoUrl: reader.result as string});
@@ -601,6 +689,10 @@ export default function AdminPanel() {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
+                                if (file.size > 512 * 1024) {
+                                  alert('Favicon must be less than 512KB');
+                                  return;
+                                }
                                 const reader = new FileReader();
                                 reader.onloadend = () => {
                                   setSettings({...settings, faviconUrl: reader.result as string});
@@ -658,6 +750,10 @@ export default function AdminPanel() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                alert('Section image must be less than 2MB');
+                                return;
+                              }
                               const reader = new FileReader();
                               reader.onloadend = () => {
                                 setSettings({...settings, tipsSectionImageUrl: reader.result as string});
@@ -706,6 +802,185 @@ export default function AdminPanel() {
                     rows={4}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
                   />
+                </div>
+              </div>
+            </motion.div>
+          ) : activeTab === 'menus' ? (
+            <motion.div 
+              key="menus"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl space-y-8"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-black text-gray-900">Menu Management</h2>
+                <Button onClick={saveSettings}><Save className="w-5 h-5" /> Save Changes</Button>
+              </div>
+
+              <div className="space-y-8">
+                {/* Header Menus */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-black text-gray-900">Header Navigation</h3>
+                    <Button variant="outline" size="sm" onClick={addHeaderMenu}>
+                      <Plus className="w-4 h-4" /> Add Menu Item
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {settings.headerMenus.map((menu, mIndex) => (
+                      <div key={menu.id} className="p-6 bg-gray-50 rounded-3xl border border-gray-100 space-y-4">
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Label</label>
+                            <input 
+                              type="text" 
+                              value={menu.label}
+                              onChange={(e) => updateHeaderMenu(mIndex, { ...menu, label: e.target.value })}
+                              className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Link (URL or Path)</label>
+                            <input 
+                              type="text" 
+                              value={menu.href}
+                              onChange={(e) => updateHeaderMenu(mIndex, { ...menu, href: e.target.value })}
+                              className="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                            />
+                          </div>
+                          <div className="flex items-end gap-2">
+                            <button 
+                              onClick={() => addDropdownItem(mIndex)}
+                              className="p-2 text-[#00a884] hover:bg-[#00a884]/5 rounded-xl transition-colors"
+                              title="Add Dropdown"
+                            >
+                              <ChevronDown className="w-5 h-5" />
+                            </button>
+                            <button 
+                              onClick={() => deleteHeaderMenu(mIndex)}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Dropdown Items */}
+                        {menu.dropdown && menu.dropdown.length > 0 && (
+                          <div className="pl-8 space-y-3 border-l-2 border-gray-200 ml-4">
+                            {menu.dropdown.map((drop, dIndex) => (
+                              <div key={drop.id} className="flex flex-col sm:flex-row gap-3 items-center">
+                                <div className="flex-1">
+                                  <input 
+                                    type="text" 
+                                    value={drop.label}
+                                    onChange={(e) => updateDropdownItem(mIndex, dIndex, { ...drop, label: e.target.value })}
+                                    placeholder="Submenu Label"
+                                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none"
+                                  />
+                                </div>
+                                <div className="flex-1">
+                                  <input 
+                                    type="text" 
+                                    value={drop.href}
+                                    onChange={(e) => updateDropdownItem(mIndex, dIndex, { ...drop, href: e.target.value })}
+                                    placeholder="Submenu Link"
+                                    className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none"
+                                  />
+                                </div>
+                                <button 
+                                  onClick={() => deleteDropdownItem(mIndex, dIndex)}
+                                  className="p-1.5 text-red-400 hover:text-red-500 transition-colors"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer Quick Links */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-black text-gray-900">Footer Quick Links</h3>
+                    <Button variant="outline" size="sm" onClick={addFooterQuickLink}>
+                      <Plus className="w-4 h-4" /> Add Link
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {settings.footerQuickLinks.map((link, index) => (
+                      <div key={link.id} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="flex-1 space-y-2">
+                          <input 
+                            type="text" 
+                            value={link.label}
+                            onChange={(e) => updateFooterQuickLink(index, { ...link, label: e.target.value })}
+                            placeholder="Label"
+                            className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none"
+                          />
+                          <input 
+                            type="text" 
+                            value={link.href}
+                            onChange={(e) => updateFooterQuickLink(index, { ...link, href: e.target.value })}
+                            placeholder="Link"
+                            className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none"
+                          />
+                        </div>
+                        <button 
+                          onClick={() => deleteFooterQuickLink(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer Legal Links */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-black text-gray-900">Footer Legal Links</h3>
+                    <Button variant="outline" size="sm" onClick={addFooterLegalLink}>
+                      <Plus className="w-4 h-4" /> Add Link
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {settings.footerLegalLinks.map((link, index) => (
+                      <div key={link.id} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="flex-1 space-y-2">
+                          <input 
+                            type="text" 
+                            value={link.label}
+                            onChange={(e) => updateFooterLegalLink(index, { ...link, label: e.target.value })}
+                            placeholder="Label"
+                            className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none"
+                          />
+                          <input 
+                            type="text" 
+                            value={link.href}
+                            onChange={(e) => updateFooterLegalLink(index, { ...link, href: e.target.value })}
+                            placeholder="Link"
+                            className="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none"
+                          />
+                        </div>
+                        <button 
+                          onClick={() => deleteFooterLegalLink(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
