@@ -242,5 +242,14 @@ export const TOOLS: Tool[] = [
     icon: 'FileEdit',
     category: 'Document',
     enabled: true
+  },
+  {
+    id: 'fake-whatsapp-screenshot',
+    title: 'Fake WhatsApp Screenshot Generator',
+    slug: 'fake-whatsapp-screenshot',
+    description: 'Generate realistic fake WhatsApp conversation screenshots for pranks and social media.',
+    icon: 'MessageSquare',
+    category: 'Social',
+    enabled: true
   }
 ];

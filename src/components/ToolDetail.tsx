@@ -1,4 +1,5 @@
 import React from 'react';
+import html2canvas from 'html2canvas';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -52,7 +53,20 @@ import {
   Undo,
   Redo,
   MousePointer2,
-  Hand
+  Hand,
+  MessageSquare,
+  Signal,
+  Wifi,
+  Battery,
+  User as UserIcon,
+  Edit2,
+  Plus,
+  CheckCheck,
+  MoreVertical,
+  Phone,
+  Video,
+  Smile,
+  Paperclip
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -82,7 +96,11 @@ const iconMap: Record<string, any> = {
   Type,
   Link: LinkIcon,
   Cpu,
-  FileEdit
+  FileEdit,
+  Sparkles,
+  RefreshCw,
+  Camera,
+  MessageSquare
 };
 
 // --- AI Detector Component ---
@@ -1009,6 +1027,496 @@ const StylishTextGenerator = () => {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+// --- Fake WhatsApp Generator Component ---
+const FakeWhatsAppGenerator = () => {
+  const [contactName, setContactName] = React.useState('John Doe');
+  const [contactStatus, setContactStatus] = React.useState('online');
+  const [profilePic, setProfilePic] = React.useState('');
+  const [batteryLevel, setBatteryLevel] = React.useState(85);
+  const [timeDisplay, setTimeDisplay] = React.useState('19:30');
+  const [carrierSignals, setCarrierSignals] = React.useState('2');
+  const [wifiEnabled, setWifiEnabled] = React.useState(true);
+  const [headerIconSize, setHeaderIconSize] = React.useState(1.0);
+  
+  const [messages, setMessages] = React.useState<any[]>([
+    { id: 1, type: 'sent', text: 'Hello, how are you doing today', time: '14:29', status: 'seen' }
+  ]);
+  
+  const [newMessageText, setNewMessageText] = React.useState('');
+  const [newMessageType, setNewMessageType] = React.useState('sent');
+  const [newMessageTime, setNewMessageTime] = React.useState('14:30');
+  const [newMessageStatus, setNewMessageStatus] = React.useState('seen');
+  
+  const [editingMessageId, setEditingMessageId] = React.useState<number | null>(null);
+  const [editText, setEditText] = React.useState('');
+  const [editTime, setEditTime] = React.useState('');
+  
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const previewRef = React.useRef<HTMLDivElement>(null);
+
+  const handleAddMessage = () => {
+    if (!newMessageText.trim()) return;
+    const newMessage = {
+      id: Date.now(),
+      type: newMessageType,
+      text: newMessageText.trim(),
+      time: newMessageTime,
+      status: newMessageType === 'sent' ? newMessageStatus : 'none'
+    };
+    setMessages([...messages, newMessage]);
+    setNewMessageText('');
+  };
+
+  const handleDeleteMessage = (id: number) => {
+    setMessages(messages.filter(m => m.id !== id));
+  };
+
+  const handleEditMessage = (id: number) => {
+    const msg = messages.find(m => m.id === id);
+    if (msg) {
+      setEditingMessageId(id);
+      setEditText(msg.text);
+      setEditTime(msg.time);
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (!editText.trim()) return;
+    setMessages(messages.map(m => 
+      m.id === editingMessageId ? { ...m, text: editText.trim(), time: editTime } : m
+    ));
+    setEditingMessageId(null);
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm('Are you sure you want to clear all messages?')) {
+      setMessages([]);
+    }
+  };
+
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  const generateScreenshot = async () => {
+    if (!previewRef.current) return;
+    setIsGenerating(true);
+    
+    try {
+      // Small delay to ensure everything is rendered
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const canvas = await (html2canvas as any)(previewRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        width: previewRef.current.offsetWidth,
+        height: previewRef.current.offsetHeight,
+      });
+      
+      const dataURL = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      link.href = dataURL;
+      const safeName = contactName.replace(/[^a-z0-9-_]+/gi, '_');
+      link.download = `whatsapp_${safeName}_${Date.now()}.png`;
+      link.click();
+    } catch (error) {
+      console.error('Screenshot error:', error);
+      alert('Failed to generate screenshot. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* --- Controls Panel --- */}
+      <div className="space-y-8">
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-sm">
+          <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+            <Edit2 className="w-5 h-5 text-[#00a884]" />
+            Chat Settings
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 ml-2">Contact Name</label>
+              <input 
+                type="text"
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+                className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 outline-none transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 ml-2">Status</label>
+              <select 
+                value={contactStatus}
+                onChange={(e) => setContactStatus(e.target.value)}
+                className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 outline-none transition-all"
+              >
+                <option value="online">Online</option>
+                <option value="last-seen">Last seen recently</option>
+                <option value="typing">typing...</option>
+              </select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-bold text-gray-700 ml-2">Profile Picture URL</label>
+              <input 
+                type="text"
+                value={profilePic}
+                onChange={(e) => setProfilePic(e.target.value)}
+                placeholder="https://example.com/avatar.jpg"
+                className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-gray-50 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 ml-2">Battery Level ({batteryLevel}%)</label>
+              <input 
+                type="range"
+                min="0"
+                max="100"
+                value={batteryLevel}
+                onChange={(e) => setBatteryLevel(parseInt(e.target.value))}
+                className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#00a884]"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 ml-2">System Time</label>
+              <input 
+                type="time"
+                value={timeDisplay}
+                onChange={(e) => setTimeDisplay(e.target.value)}
+                className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 outline-none transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 ml-2">Carrier Signals</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="signals" value="1" checked={carrierSignals === '1'} onChange={(e) => setCarrierSignals(e.target.value)} className="accent-[#00a884]" />
+                  <span className="text-sm text-gray-600">1 Carrier</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="signals" value="2" checked={carrierSignals === '2'} onChange={(e) => setCarrierSignals(e.target.value)} className="accent-[#00a884]" />
+                  <span className="text-sm text-gray-600">2 Carriers</span>
+                </label>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 ml-2">WiFi Enabled</label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={wifiEnabled} onChange={(e) => setWifiEnabled(e.target.checked)} className="w-5 h-5 accent-[#00a884] rounded" />
+                <span className="text-sm text-gray-600">Show WiFi Icon</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* --- Message Controls --- */}
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-sm">
+          <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-2">
+            <Plus className="w-5 h-5 text-[#00a884]" />
+            Add Message
+          </h3>
+          
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700 ml-2">Type</label>
+                <select 
+                  value={newMessageType}
+                  onChange={(e) => setNewMessageType(e.target.value)}
+                  className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 outline-none transition-all"
+                >
+                  <option value="sent">Sent</option>
+                  <option value="received">Received</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700 ml-2">Time</label>
+                <input 
+                  type="time"
+                  value={newMessageTime}
+                  onChange={(e) => setNewMessageTime(e.target.value)}
+                  className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            {newMessageType === 'sent' && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-700 ml-2">Status</label>
+                <select 
+                  value={newMessageStatus}
+                  onChange={(e) => setNewMessageStatus(e.target.value)}
+                  className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 outline-none transition-all"
+                >
+                  <option value="sent">Sent (1 tick)</option>
+                  <option value="delivered">Delivered (2 ticks)</option>
+                  <option value="seen">Seen (Blue ticks)</option>
+                </select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700 ml-2">Message Text</label>
+              <textarea 
+                value={newMessageText}
+                onChange={(e) => setNewMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAddMessage();
+                  }
+                }}
+                className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 outline-none transition-all min-h-[100px]"
+                placeholder="Type a message..."
+              />
+            </div>
+
+            <Button 
+              onClick={handleAddMessage}
+              className="w-full bg-[#00a884] text-white hover:bg-[#008f6f] py-4 font-bold rounded-2xl"
+            >
+              Add Message
+            </Button>
+          </div>
+        </div>
+
+        {/* --- Message List --- */}
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-black text-gray-900">Messages</h3>
+            <button 
+              onClick={handleClearAll}
+              className="text-red-500 font-bold text-sm hover:underline flex items-center gap-1"
+            >
+              <Trash2 className="w-4 h-4" /> Clear All
+            </button>
+          </div>
+          
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`p-4 rounded-2xl border ${msg.type === 'sent' ? 'bg-[#e8f5e8] border-green-100' : 'bg-blue-50 border-blue-100'}`}>
+                {editingMessageId === msg.id ? (
+                  <div className="space-y-4">
+                    <textarea 
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-[#00a884]"
+                    />
+                    <div className="flex gap-2">
+                      <input 
+                        type="time"
+                        value={editTime}
+                        onChange={(e) => setEditTime(e.target.value)}
+                        className="p-2 bg-white border border-gray-200 rounded-xl outline-none"
+                      />
+                      <button onClick={handleSaveEdit} className="px-4 py-2 bg-[#00a884] text-white rounded-xl font-bold text-sm">Save</button>
+                      <button onClick={() => setEditingMessageId(null)} className="px-4 py-2 bg-gray-200 text-gray-600 rounded-xl font-bold text-sm">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-xs font-bold text-gray-400 uppercase mb-1">{msg.type}</div>
+                      <p className="text-gray-800 text-sm mb-1">{msg.text}</p>
+                      <div className="text-[10px] text-gray-400">{formatTime(msg.time)}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEditMessage(msg.id)} className="p-2 text-gray-400 hover:text-[#00a884] transition-colors">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            {messages.length === 0 && (
+              <div className="text-center py-10 text-gray-400 italic">No messages yet...</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* --- Preview Panel --- */}
+      <div className="space-y-8">
+        <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-sm sticky top-40">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-black text-gray-900">Live Preview</h3>
+            <Button 
+              onClick={generateScreenshot}
+              disabled={isGenerating}
+              className="bg-[#00a884] text-white hover:bg-[#008f6f] px-6 py-3 font-bold rounded-xl shadow-lg shadow-[#00a884]/20 flex items-center gap-2"
+            >
+              {isGenerating ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+              Generate Screenshot
+            </Button>
+          </div>
+
+          <div className="flex justify-center">
+            {/* Phone Mockup */}
+            <div 
+              className="w-[375px] h-[720px] rounded-[40px] border-[8px] overflow-hidden relative shadow-2xl flex flex-col font-sans"
+              style={{ 
+                backgroundColor: '#ffffff',
+                borderColor: '#111827',
+                fontFamily: "'-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" 
+              }}
+            >
+              {/* Capture Area */}
+              <div ref={previewRef} className="flex-1 flex flex-col overflow-hidden bg-white">
+                {/* Status Bar */}
+                <div 
+                  className="px-6 py-2 flex justify-between items-center text-[11px] font-medium shrink-0"
+                  style={{ backgroundColor: '#075e54', color: '#ffffff' }}
+                >
+                  <div>{formatTime(timeDisplay)}</div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-0.5">
+                      <Signal className="w-3 h-3" />
+                      {carrierSignals === '2' && <Signal className="w-3 h-3" />}
+                    </div>
+                    {wifiEnabled && <Wifi className="w-3 h-3" />}
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px]">{batteryLevel}%</span>
+                      <div className="w-5 h-2.5 border rounded-[2px] relative p-[1px]" style={{ borderColor: 'rgba(255,255,255,0.6)' }}>
+                        <div 
+                          className={`h-full rounded-[1px] ${batteryLevel <= 20 ? 'bg-red-500' : ''}`}
+                          style={{ 
+                            width: `${batteryLevel}%`,
+                            backgroundColor: batteryLevel <= 20 ? '#ef4444' : '#ffffff'
+                          }}
+                        />
+                        <div className="absolute -right-[3px] top-1/2 -translate-y-1/2 w-[2px] h-1.5 rounded-r-sm" style={{ backgroundColor: 'rgba(255,255,255,0.6)' }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chat Header */}
+                <div 
+                  className="border-b px-4 py-3 flex items-center justify-between shrink-0 shadow-sm z-10"
+                  style={{ backgroundColor: '#ffffff', borderColor: '#f3f4f6' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <ArrowLeft className="w-5 h-5" style={{ color: '#4b5563' }} />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ backgroundColor: '#00a884', color: '#ffffff' }}>
+                      {profilePic ? (
+                        <img src={profilePic} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        <UserIcon className="w-6 h-6" />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-sm truncate" style={{ color: '#111827' }}>{contactName || 'John Doe'}</div>
+                      <div className="text-[10px]" style={{ color: '#9ca3af' }}>
+                        {contactStatus === 'online' ? 'Online' : contactStatus === 'typing' ? 'typing...' : 'Last seen recently'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4" style={{ color: '#6b7280' }}>
+                    <Video className="w-5 h-5" />
+                    <Phone className="w-5 h-5" />
+                    <MoreVertical className="w-5 h-5" />
+                  </div>
+                </div>
+
+                {/* Messages Area */}
+                <div 
+                  className="flex-1 overflow-y-auto p-4 space-y-3 relative"
+                  style={{ 
+                    backgroundColor: '#efeae2',
+                    backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
+                    backgroundSize: 'contain'
+                  }}
+                >
+                  <div className="flex justify-center my-4">
+                    <span className="px-3 py-1 rounded-lg text-[10px] font-medium shadow-sm uppercase tracking-wider" style={{ backgroundColor: 'rgba(255,255,255,0.8)', color: '#6b7280' }}>Today</span>
+                  </div>
+                  
+                  <div className="flex justify-center mb-4">
+                    <div className="px-4 py-2 rounded-lg text-[10px] text-center shadow-sm max-w-[90%]" style={{ backgroundColor: '#fff9c4', color: '#4b5563' }}>
+                      <span className="flex items-center justify-center gap-1">
+                        <Clock className="w-3 h-3" /> Messages are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them. Click to learn more.
+                      </span>
+                    </div>
+                  </div>
+
+                  {messages.map((msg) => (
+                    <div key={msg.id} className={`flex ${msg.type === 'sent' ? 'justify-end' : 'justify-start'}`}>
+                      <div 
+                        className={`max-w-[85%] px-3 py-2 rounded-xl relative shadow-sm text-sm ${
+                          msg.type === 'sent' 
+                            ? 'rounded-tr-none' 
+                            : 'rounded-tl-none'
+                        }`}
+                        style={{ backgroundColor: msg.type === 'sent' ? '#dcf8c6' : '#ffffff' }}
+                      >
+                        <div className="leading-relaxed whitespace-pre-wrap" style={{ color: '#111827' }}>{msg.text}</div>
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          <span className="text-[9px]" style={{ color: '#9ca3af' }}>{formatTime(msg.time)}</span>
+                          {msg.type === 'sent' && (
+                            <span className="shrink-0">
+                              {msg.status === 'sent' && <Check className="w-3 h-3" style={{ color: '#9ca3af' }} />}
+                              {msg.status === 'delivered' && <CheckCheck className="w-3 h-3" style={{ color: '#9ca3af' }} />}
+                              {msg.status === 'seen' && <CheckCheck className="w-3 h-3" style={{ color: '#34b7f1' }} />}
+                            </span>
+                          )}
+                        </div>
+                        {/* Tail */}
+                        <div 
+                          className={`absolute top-0 w-2 h-3 ${
+                            msg.type === 'sent' 
+                              ? '-right-1.5' 
+                              : '-left-1.5'
+                          }`}
+                          style={{
+                            backgroundColor: msg.type === 'sent' ? '#dcf8c6' : '#ffffff',
+                            clipPath: msg.type === 'sent' 
+                              ? 'polygon(0 0, 0 100%, 100% 0)' 
+                              : 'polygon(100% 0, 100% 100%, 0 0)'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Message Input Area */}
+                <div className="p-2 flex items-center gap-2 shrink-0" style={{ backgroundColor: '#f0f2f6' }}>
+                  <div className="flex-1 rounded-full px-4 py-2 flex items-center gap-3 shadow-sm" style={{ backgroundColor: '#ffffff' }}>
+                    <Smile className="w-6 h-6" style={{ color: '#9ca3af' }} />
+                    <div className="flex-1 text-sm" style={{ color: '#9ca3af' }}>Type a message</div>
+                    <Paperclip className="w-6 h-6 -rotate-45" style={{ color: '#9ca3af' }} />
+                    <Camera className="w-6 h-6" style={{ color: '#9ca3af' }} />
+                  </div>
+                  <div className="w-11 h-11 rounded-full flex items-center justify-center shadow-md" style={{ backgroundColor: '#00a884', color: '#ffffff' }}>
+                    <Mic className="w-6 h-6" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -2552,6 +3060,7 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
       case 'short-url-generator': return <ShortURLGenerator user={user} />;
       case 'stylish-text-generator': return <StylishTextGenerator />;
       case 'text-repeater': return <TextRepeater />;
+      case 'fake-whatsapp-screenshot': return <FakeWhatsAppGenerator />;
       case 'qr-code-scanner': return <QRCodeScanner />;
       case 'pdf-editor': return <PDFEditor />;
       default: return (
@@ -2683,6 +3192,24 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
           "Create fun text patterns or long messages for friends.",
           "Support for up to 10,000 repetitions in one click.",
           "Easy one-click copy to clipboard functionality."
+        ]
+      };
+    }
+    if (tool.slug === 'fake-whatsapp-screenshot') {
+      return {
+        howToUse: [
+          "Customize the chat header with contact name, status, and profile picture.",
+          "Set the phone status bar details like time, battery, and signal strength.",
+          "Add messages to the conversation, choosing between 'Sent' and 'Received'.",
+          "For sent messages, select the message status (Sent, Delivered, or Seen).",
+          "Click 'Generate Screenshot' to download your realistic WhatsApp chat image."
+        ],
+        benefits: [
+          "Create highly realistic WhatsApp chat screenshots for pranks or storytelling.",
+          "Fully customizable elements including status bar, header, and message details.",
+          "Live preview allows you to see changes instantly as you edit.",
+          "High-quality PNG export suitable for sharing on social media.",
+          "Privacy-focused: All generation happens locally in your browser."
         ]
       };
     }
