@@ -64,7 +64,7 @@ import { jsPDF } from 'jspdf';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 import { SiteSettings, TOOLS, Tool } from '../types';
-import { auth, onAuthStateChanged, googleProvider, signInWithPopup, signOut } from '../firebase';
+import { auth, db, doc, getDoc, setDoc, serverTimestamp, onAuthStateChanged, googleProvider, signInWithPopup, signOut } from '../firebase';
 import { User } from 'firebase/auth';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
@@ -1958,7 +1958,7 @@ ${window.location.href}
 };
 
 // --- Short URL Generator Component ---
-const ShortURLGenerator = () => {
+const ShortURLGenerator = ({ user }: { user: User | null }) => {
   const [url, setUrl] = React.useState('');
   const [alias, setAlias] = React.useState('');
   const [isShortening, setIsShortening] = React.useState(false);
@@ -1976,7 +1976,7 @@ const ShortURLGenerator = () => {
     }
   }, []);
 
-  const handleShorten = () => {
+  const handleShorten = async () => {
     if (!url.trim()) {
       alert('Please enter a URL.');
       return;
@@ -1989,11 +1989,35 @@ const ShortURLGenerator = () => {
     setIsShortening(true);
     setResult(null);
 
-    // Simulation of shortening
-    setTimeout(() => {
+    try {
       const shortId = alias.trim() || Math.random().toString(36).substring(2, 8);
-      const shortUrl = `${window.location.origin}/s/${shortId}`;
       
+      // Check if alias already exists
+      const docRef = doc(db, 'shortlinks', shortId);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        if (alias.trim()) {
+          alert('This custom alias is already taken. Please try another one.');
+          setIsShortening(false);
+          return;
+        } else {
+          // If random ID exists (unlikely but possible), try again
+          handleShorten();
+          return;
+        }
+      }
+
+      // Save to Firestore
+      await setDoc(docRef, {
+        shortId,
+        originalUrl: url,
+        authorUid: user?.uid || 'anonymous',
+        createdAt: serverTimestamp(),
+        clicks: 0
+      });
+
+      const shortUrl = `https://linksshare.online/s/${shortId}`;
       setResult(shortUrl);
       
       const newHistory = [
@@ -2003,8 +2027,12 @@ const ShortURLGenerator = () => {
       
       setHistory(newHistory);
       localStorage.setItem('url-history', JSON.stringify(newHistory));
+    } catch (err) {
+      console.error('Shortening error:', err);
+      alert('An error occurred while shortening your URL. Please try again.');
+    } finally {
       setIsShortening(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -2030,13 +2058,13 @@ const ShortURLGenerator = () => {
 
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">linkshare.online/s/</span>
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">linksshare.online/s/</span>
                 <input 
                   type="text"
                   value={alias}
                   onChange={(e) => setAlias(e.target.value)}
                   placeholder="custom-alias"
-                  className="w-full pl-36 pr-5 py-5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all"
+                  className="w-full pl-44 pr-5 py-5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all"
                 />
               </div>
               <Button 
@@ -2422,7 +2450,7 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
       case 'ai-detector': return <AIDetector />;
       case 'qr-code-generator': return <QRCodeGenerator />;
       case 'word-counter': return <WordCounter />;
-      case 'short-url-generator': return <ShortURLGenerator />;
+      case 'short-url-generator': return <ShortURLGenerator user={user} />;
       case 'stylish-text-generator': return <StylishTextGenerator />;
       case 'text-repeater': return <TextRepeater />;
       case 'qr-code-scanner': return <QRCodeScanner />;

@@ -87,6 +87,19 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["slug", "title", "excerpt", "content", "category", "author"]
+    },
+    "ShortLink": {
+      "title": "ShortLink",
+      "description": "Shortened URL mapping",
+      "type": "object",
+      "properties": {
+        "shortId": { "type": "string" },
+        "originalUrl": { "type": "string", "format": "uri" },
+        "authorUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "clicks": { "type": "number" }
+      },
+      "required": ["shortId", "originalUrl"]
     }
   },
   "firestore": {
@@ -113,6 +126,10 @@
     "/tips/{tipId}": {
       "schema": "Tip",
       "description": "WhatsApp Tips & Tricks tutorials"
+    },
+    "/shortlinks/{shortId}": {
+      "schema": "ShortLink",
+      "description": "Shortened URL mappings"
     }
   }
 }

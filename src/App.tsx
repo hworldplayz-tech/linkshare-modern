@@ -17,6 +17,7 @@ import TipsPage from './components/TipsPage';
 import TipDetailPage from './components/TipDetailPage';
 import ToolsPage from './components/ToolsPage';
 import ToolDetail from './components/ToolDetail';
+import RedirectPage from './components/RedirectPage';
 
 export default function App() {
   // Load initial settings from localStorage if available for instant feel
@@ -179,6 +180,7 @@ export default function App() {
         <Route path="/tools/:slug" element={<ToolDetail settings={settings} />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/invite/:id" element={<InviteDetail settings={settings} />} />
+        <Route path="/s/:shortId" element={<RedirectPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
