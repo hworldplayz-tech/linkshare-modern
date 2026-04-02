@@ -57,6 +57,7 @@ import { Group, SiteSettings, DEFAULT_SETTINGS, Tip, TOOLS } from '../types';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
+import { PollBanner } from './PollBanner';
 import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
@@ -274,6 +275,9 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
       )}
 
       <AdPlacement id="home_hero_bottom" settings={settings} />
+
+      {/* --- Poll Banner --- */}
+      <PollBanner settings={settings} />
 
       {/* --- Featured Groups --- */}
       {featuredGroups.length > 0 && (

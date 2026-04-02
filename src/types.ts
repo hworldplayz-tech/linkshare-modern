@@ -77,6 +77,8 @@ export interface SiteSettings {
   categories: string[];
   countries: string[];
   globalAdsEnabled: boolean;
+  showPollBanner: boolean;
+  pollBannerText: string;
   adPlacements: AdPlacement[];
 }
 
@@ -108,6 +110,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   faviconUrl: '',
   headerMenus: [
     { id: '1', label: 'Home', href: '/' },
+    { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
     { id: '2', label: 'About', href: '/about' },
     { id: '5', label: 'Contact', href: '/contact' },
     { id: '3', label: 'Browse Groups', href: '#groups' },
@@ -121,6 +124,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   footerAbout: 'The largest WhatsApp Group Links Hub. Discover and promote your active WhatsApp groups and channels. Join thousands of active communities today.',
   footerQuickLinks: [
     { id: '1', label: 'Home', href: '/' },
+    { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
     { id: '2', label: 'About', href: '/about' },
     { id: '5', label: 'Contact', href: '/contact' },
     { id: '6', label: 'Tips & Tricks', href: '/tips-tricks' },
@@ -142,6 +146,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   categories: ['Tech', 'Movies', 'Education', 'Entertainment', 'Business', 'Sports', 'Gaming', 'News', 'Lifestyle', 'Other'],
   countries: ['Global', 'USA', 'Pakistan', 'India', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Other'],
   globalAdsEnabled: false,
+  showPollBanner: true,
+  pollBannerText: 'Iran vs Israel Live Voting: Where do you stand? Vote for your favorite country!',
   adPlacements: [
     { id: 'global_top', label: 'Global Top Banner', type: 'Banner 728x90', enabled: false, script: '' },
     { id: 'home_hero_bottom', label: 'Home Below Hero', type: 'Banner 728x90', enabled: false, script: '' },

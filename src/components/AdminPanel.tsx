@@ -32,7 +32,9 @@ import {
   MessageCircle,
   Clock,
   Image as ImageIcon,
-  Menu
+  Menu,
+  Vote,
+  Info
 } from 'lucide-react';
 import { 
   db, 
@@ -104,8 +106,16 @@ export default function AdminPanel() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
-  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips' | 'ads' | 'menus'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips' | 'ads' | 'menus' | 'polls'>('settings');
   const [loading, setLoading] = useState(true);
+  const [poll, setPoll] = useState<any>(null);
+  const [pollCountries, setPollCountries] = useState<any[]>([]);
+  const [fakeVotesIran, setFakeVotesIran] = useState(0);
+  const [fakeVotesIsrael, setFakeVotesIsrael] = useState(0);
+  const [iranFlagUrl, setIranFlagUrl] = useState('');
+  const [israelFlagUrl, setIsraelFlagUrl] = useState('');
+  const [useFakeVotes, setUseFakeVotes] = useState(false);
+  const [editingPollCountry, setEditingPollCountry] = useState<any>(null);
 
   const [newCategory, setNewCategory] = useState('');
   const [newCountry, setNewCountry] = useState('');
@@ -174,6 +184,24 @@ export default function AdminPanel() {
       handleFirestoreError(err, OperationType.GET, 'tips');
     });
 
+    const unsubPoll = onSnapshot(doc(db, 'polls', 'iran-vs-israel'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setPoll(data);
+        setFakeVotesIran(data.fakeVotesIran || 0);
+        setFakeVotesIsrael(data.fakeVotesIsrael || 0);
+        setIranFlagUrl(data.iranFlagUrl || '');
+        setIsraelFlagUrl(data.israelFlagUrl || '');
+        setUseFakeVotes(data.useFakeVotes || false);
+      }
+    });
+
+    const unsubPollCountries = onSnapshot(collection(db, 'countryVotes'), (snapshot) => {
+      setPollCountries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'countryVotes');
+    });
+
     return () => {
       unsubSettings();
       unsubGroups();
@@ -181,6 +209,8 @@ export default function AdminPanel() {
       unsubCategories();
       unsubCountries();
       unsubTips();
+      unsubPoll();
+      unsubPollCountries();
     };
   }, [isLoggedIn]);
 
@@ -449,6 +479,38 @@ export default function AdminPanel() {
     }
   };
 
+  const savePollSettings = async () => {
+    try {
+      await updateDoc(doc(db, 'polls', 'iran-vs-israel'), {
+        fakeVotesIran: Number(fakeVotesIran),
+        fakeVotesIsrael: Number(fakeVotesIsrael),
+        iranFlagUrl: iranFlagUrl,
+        israelFlagUrl: israelFlagUrl,
+        useFakeVotes: useFakeVotes,
+        lastUpdated: Timestamp.now()
+      });
+      // Also save site settings for the banner
+      await setDoc(doc(db, 'settings', 'main'), settings);
+      alert('Poll settings saved successfully!');
+    } catch (err) {
+      console.error('Error saving poll settings:', err);
+      handleFirestoreError(err, OperationType.WRITE, 'polls/iran-vs-israel');
+    }
+  };
+
+  const savePollCountry = async () => {
+    if (!editingPollCountry) return;
+    try {
+      const { id, ...data } = editingPollCountry;
+      await updateDoc(doc(db, 'countryVotes', id), data);
+      setEditingPollCountry(null);
+      alert('Country updated successfully!');
+    } catch (err) {
+      console.error('Error saving poll country:', err);
+      handleFirestoreError(err, OperationType.UPDATE, `countryVotes/${editingPollCountry.id}`);
+    }
+  };
+
   if (loading) return null;
 
   const handleGoogleLogin = async () => {
@@ -532,6 +594,7 @@ export default function AdminPanel() {
               { id: 'categories', label: 'Categories', icon: ListIcon },
               { id: 'countries', label: 'Countries', icon: Globe },
               { id: 'tips', label: 'Tips & Tricks', icon: BookOpen },
+              { id: 'polls', label: 'Poll Management', icon: Vote },
               { id: 'ads', label: 'Ad Management', icon: Code },
             ].map(tab => (
               <button
@@ -577,7 +640,208 @@ export default function AdminPanel() {
       {/* Main Content */}
       <main className="flex-1 p-8 lg:p-12 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {activeTab === 'settings' ? (
+          {activeTab === 'polls' ? (
+            <motion.div 
+              key="polls"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl space-y-8"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-black text-gray-900">Poll Management</h2>
+                <Button onClick={savePollSettings}><Save className="w-5 h-5" /> Save Poll Settings</Button>
+              </div>
+
+              <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+                <div className="flex items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${settings.showPollBanner ? 'bg-[#00a884] shadow-[#00a884]/20' : 'bg-gray-300 shadow-gray-200'}`}>
+                      <Vote className="text-white w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-900">Show Poll Banner on Home</h3>
+                      <p className="text-sm text-gray-500">Display a voting banner below the hero section.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSettings({...settings, showPollBanner: !settings.showPollBanner})}
+                    className={`w-16 h-8 rounded-full transition-all relative ${settings.showPollBanner ? 'bg-[#00a884]' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${settings.showPollBanner ? 'left-9' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                {settings.showPollBanner && (
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Poll Banner Text</label>
+                    <input 
+                      type="text" 
+                      value={settings.pollBannerText}
+                      onChange={(e) => setSettings({...settings, pollBannerText: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="Iran vs Israel Live Voting: Where do you stand?"
+                    />
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${useFakeVotes ? 'bg-[#00a884] shadow-[#00a884]/20' : 'bg-gray-300 shadow-gray-200'}`}>
+                      <Sparkles className="text-white w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-900">Use Fake Voting System</h3>
+                      <p className="text-sm text-gray-500">When enabled, public votes will show real + fake counts.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setUseFakeVotes(!useFakeVotes)}
+                    className={`w-16 h-8 rounded-full transition-all relative ${useFakeVotes ? 'bg-[#00a884]' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${useFakeVotes ? 'left-9' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <img src="https://flagcdn.com/w40/ir.png" alt="Iran" className="w-6 h-4 object-cover rounded-sm" />
+                      <label className="text-sm font-bold text-gray-700">Iran Fake Votes</label>
+                    </div>
+                    <input 
+                      type="number" 
+                      value={fakeVotesIran}
+                      onChange={(e) => setFakeVotesIran(parseInt(e.target.value) || 0)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    />
+                    <div className="text-xs text-gray-400 font-bold uppercase tracking-widest flex justify-between">
+                      <span>Real Votes:</span>
+                      <span className="text-gray-900">{poll?.realVotesIran || 0}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <img src="https://flagcdn.com/w40/il.png" alt="Israel" className="w-6 h-4 object-cover rounded-sm" />
+                      <label className="text-sm font-bold text-gray-700">Israel Fake Votes</label>
+                    </div>
+                    <input 
+                      type="number" 
+                      value={fakeVotesIsrael}
+                      onChange={(e) => setFakeVotesIsrael(parseInt(e.target.value) || 0)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    />
+                    <div className="text-xs text-gray-400 font-bold uppercase tracking-widest flex justify-between">
+                      <span>Real Votes:</span>
+                      <span className="text-gray-900">{poll?.realVotesIsrael || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <label className="block text-sm font-bold text-gray-700">Iran Main Flag (Image/GIF)</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-12 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                        <img src={iranFlagUrl || "https://flagcdn.com/w160/ir.png"} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <input 
+                        type="text" 
+                        value={iranFlagUrl}
+                        onChange={(e) => setIranFlagUrl(e.target.value)}
+                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                        placeholder="Flag URL or GIF..."
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <label className="block text-sm font-bold text-gray-700">Israel Main Flag (Image/GIF)</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-12 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                        <img src={israelFlagUrl || "https://flagcdn.com/w160/il.png"} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <input 
+                        type="text" 
+                        value={israelFlagUrl}
+                        onChange={(e) => setIsraelFlagUrl(e.target.value)}
+                        className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                        placeholder="Flag URL or GIF..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100">
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-200">
+                      <Info className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-black text-blue-900 mb-1">How it works</h4>
+                      <p className="text-sm text-blue-700 leading-relaxed">
+                        The "Fake Votes" you set here are added to the "Real Votes" when the system is ON. 
+                        User votes always increment the "Real Votes" counter.
+                        If you turn it OFF, only the actual user votes will be displayed publicly.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <h3 className="text-xl font-black text-gray-900 flex items-center gap-2">
+                    <Globe className="w-5 h-5 text-[#00a884]" /> Manage Poll Countries
+                  </h3>
+                  <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-100">
+                          <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Country</th>
+                          <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Votes (IR / IL)</th>
+                          <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-gray-400">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {pollCountries.map(country => (
+                          <tr key={country.id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                                  {country.flagUrl ? (
+                                    <img src={country.flagUrl} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <img src={`https://flagcdn.com/w40/${country.countryCode.toLowerCase()}.png`} alt="" className="w-full h-full object-cover" />
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-gray-900">{country.countryName}</div>
+                                  <div className="text-[10px] font-black uppercase tracking-wider text-gray-400">{country.countryCode}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-4">
+                                <div className="text-xs font-bold text-green-600">{country.votesIran?.toLocaleString() || 0}</div>
+                                <div className="text-xs font-bold text-blue-600">{country.votesIsrael?.toLocaleString() || 0}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <button 
+                                onClick={() => setEditingPollCountry(country)}
+                                className="p-2 text-[#00a884] hover:bg-[#00a884]/5 rounded-xl transition-colors"
+                              >
+                                <Edit3 className="w-5 h-5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ) : activeTab === 'settings' ? (
             <motion.div 
               key="settings"
               initial={{ opacity: 0, y: 20 }}
@@ -1361,6 +1625,93 @@ export default function AdminPanel() {
 
       {/* Edit Group Modal */}
       <AnimatePresence>
+        {editingPollCountry && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingPollCountry(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl"
+            >
+              <div className="p-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                <h3 className="text-2xl font-black text-gray-900">Edit Poll Country</h3>
+                <button onClick={() => setEditingPollCountry(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Country Name</label>
+                  <input 
+                    type="text" 
+                    value={editingPollCountry.countryName}
+                    onChange={(e) => setEditingPollCountry({ ...editingPollCountry, countryName: e.target.value })}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Flag URL (Image or GIF)</label>
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                        {editingPollCountry.flagUrl ? (
+                          <img src={editingPollCountry.flagUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={`https://flagcdn.com/w80/${editingPollCountry.countryCode.toLowerCase()}.png`} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <div className="flex-1 relative">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setEditingPollCountry({...editingPollCountry, flagUrl: reader.result as string});
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="hidden"
+                          id="poll-country-flag-upload"
+                        />
+                        <label 
+                          htmlFor="poll-country-flag-upload"
+                          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 border-dashed rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+                        >
+                          <Upload className="w-5 h-5" /> {editingPollCountry.flagUrl ? 'Change Flag' : 'Upload Flag'}
+                        </label>
+                      </div>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={editingPollCountry.flagUrl || ''}
+                      onChange={(e) => setEditingPollCountry({ ...editingPollCountry, flagUrl: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="Or paste URL here..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 border-t border-gray-100 flex justify-end gap-4 sticky bottom-0 bg-white">
+                <Button variant="outline" onClick={() => setEditingPollCountry(null)}>Cancel</Button>
+                <Button onClick={savePollCountry}><Save className="w-5 h-5" /> Save Changes</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {editingGroup && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 

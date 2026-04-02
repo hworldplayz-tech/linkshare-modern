@@ -18,6 +18,7 @@ import TipDetailPage from './components/TipDetailPage';
 import ToolsPage from './components/ToolsPage';
 import ToolDetail from './components/ToolDetail';
 import RedirectPage from './components/RedirectPage';
+import { IranVsIsraelPage } from './components/IranVsIsraelPage';
 
 export default function App() {
   // Load initial settings from localStorage if available for instant feel
@@ -49,9 +50,21 @@ export default function App() {
         // Migration: Ensure ad placements exist
         const needsAdUpdate = !data.adPlacements || data.adPlacements.length < DEFAULT_SETTINGS.adPlacements.length;
         const needsGlobalAdUpdate = data.globalAdsEnabled === undefined;
+        const needsPollMenuUpdate = !data.headerMenus?.some(m => m.href === '/iran-vs-israel');
+        const needsPollBannerUpdate = data.showPollBanner === undefined;
 
-        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate) {
+        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate) {
           const updateData: any = {};
+          
+          if (needsPollBannerUpdate) {
+            updateData.showPollBanner = DEFAULT_SETTINGS.showPollBanner;
+            updateData.pollBannerText = DEFAULT_SETTINGS.pollBannerText;
+          }
+          
+          if (needsPollMenuUpdate) {
+            updateData.headerMenus = [...(data.headerMenus || []), { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' }];
+            updateData.footerQuickLinks = [...(data.footerQuickLinks || []), { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' }];
+          }
           
           if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate) {
             updateData.footerLegalLinks = (data.footerLegalLinks || []).map(link => {
@@ -178,6 +191,7 @@ export default function App() {
         <Route path="/tips-tricks/:slug" element={<TipDetailPage settings={settings} />} />
         <Route path="/tools" element={<ToolsPage settings={settings} />} />
         <Route path="/tools/:slug" element={<ToolDetail settings={settings} />} />
+        <Route path="/iran-vs-israel" element={<IranVsIsraelPage />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/invite/:id" element={<InviteDetail settings={settings} />} />
         <Route path="/s/:shortId" element={<RedirectPage />} />

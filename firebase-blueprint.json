@@ -100,6 +100,33 @@
         "clicks": { "type": "number" }
       },
       "required": ["shortId", "originalUrl"]
+    },
+    "Poll": {
+      "title": "Poll",
+      "description": "Global poll data",
+      "type": "object",
+      "properties": {
+        "realVotesIran": { "type": "number" },
+        "realVotesIsrael": { "type": "number" },
+        "fakeVotesIran": { "type": "number" },
+        "fakeVotesIsrael": { "type": "number" },
+        "iranFlagUrl": { "type": "string", "format": "uri" },
+        "israelFlagUrl": { "type": "string", "format": "uri" },
+        "useFakeVotes": { "type": "boolean" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      }
+    },
+    "CountryVote": {
+      "title": "CountryVote",
+      "description": "Votes count per country",
+      "type": "object",
+      "properties": {
+        "countryCode": { "type": "string" },
+        "countryName": { "type": "string" },
+        "flagUrl": { "type": "string", "format": "uri" },
+        "votesIran": { "type": "number" },
+        "votesIsrael": { "type": "number" }
+      }
     }
   },
   "firestore": {
@@ -130,6 +157,14 @@
     "/shortlinks/{shortId}": {
       "schema": "ShortLink",
       "description": "Shortened URL mappings"
+    },
+    "/polls/{pollId}": {
+      "schema": "Poll",
+      "description": "Global polls"
+    },
+    "/countryVotes/{countryCode}": {
+      "schema": "CountryVote",
+      "description": "Votes by country"
     }
   }
 }

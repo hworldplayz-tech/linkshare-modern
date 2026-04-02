@@ -44,8 +44,8 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "hworldplayz@gmail.com" && request.auth.token.email_verified == true));
+        ((request.auth.token.email == "hworldplayz@gmail.com" && request.auth.token.email_verified == true) ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
     function isValidEmail(email) {
@@ -77,9 +77,13 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if (isOwner(userId) && isValidUser(request.resource.data)) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
+    }
+
+    match /test/connection {
+      allow get: if true;
     }
 
     match /categories/{categoryId} {
@@ -105,7 +109,8 @@ service cloud.firestore {
 
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if true; // Allow initialization
+      allow update: if isAdmin();
     }
 
     match /tips/{tipId} {
@@ -118,6 +123,24 @@ service cloud.firestore {
       allow create: if true; // Allow anyone to shorten URLs
       allow update: if isAdmin() || (isAuthenticated() && resource.data.authorUid == request.auth.uid);
       allow delete: if isAdmin();
+    }
+
+    match /polls/{pollId} {
+      allow read: if true;
+      allow create: if true; // Allow initialization
+      allow update: if isAdmin() || 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['realVotesIran', 'realVotesIsrael', 'lastUpdated']) &&
+         (request.resource.data.realVotesIran == resource.data.realVotesIran + 1 || 
+          request.resource.data.realVotesIsrael == resource.data.realVotesIsrael + 1));
+    }
+
+    match /countryVotes/{countryCode} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if isAdmin() ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votesIran', 'votesIsrael']) &&
+         (request.resource.data.votesIran == resource.data.votesIran + 1 || 
+          request.resource.data.votesIsrael == resource.data.votesIsrael + 1));
     }
   }
 }
