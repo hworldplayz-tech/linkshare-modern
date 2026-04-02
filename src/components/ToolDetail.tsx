@@ -829,12 +829,11 @@ const StylishTextGenerator = () => {
   const [text, setText] = React.useState('');
   
   const styles = React.useMemo(() => {
-    if (!text) return [];
-    
     const charMap: Record<string, Record<string, string>> = {
       bold: {
         'a': '𝐚', 'b': '𝐛', 'c': '𝐜', 'd': '𝐝', 'e': '𝐞', 'f': '𝐟', 'g': '𝐠', 'h': '𝐡', 'i': '𝐢', 'j': '𝐣', 'k': '𝐤', 'l': '𝐥', 'm': '𝐦', 'n': '𝐧', 'o': '𝐨', 'p': '𝐩', 'q': '𝐪', 'r': '𝐫', 's': '𝐬', 't': '𝐭', 'u': '𝐮', 'v': '𝐯', 'w': '𝐰', 'x': '𝐱', 'y': '𝐲', 'z': '𝐳',
-        'A': '𝐀', 'B': '𝐁', 'C': '𝐂', 'D': '𝐃', 'E': '𝐄', 'F': '𝐅', 'G': '𝐆', 'H': '𝐇', 'I': '𝐈', 'J': '𝐉', 'K': '𝐊', 'L': '𝐋', 'M': '𝐌', 'N': '𝐍', 'O': '𝐎', 'P': '𝐏', 'Q': '𝐐', 'R': '𝐑', 'S': '𝐒', 'T': '𝐓', 'U': '𝐔', 'V': '𝐕', 'W': '𝐖', 'X': '𝐗', 'Y': '𝐘', 'Z': '𝐙'
+        'A': '𝐀', 'B': '𝐁', 'C': '𝐂', 'D': '𝐃', 'E': '𝐄', 'F': '𝐅', 'G': '𝐆', 'H': '𝐇', 'I': '𝐈', 'J': '𝐉', 'K': '𝐊', 'L': '𝐋', 'M': '𝐌', 'N': '𝐍', 'O': '𝐎', 'P': '𝐏', 'Q': '𝐐', 'R': '𝐑', 'S': '𝐒', 'T': '𝐓', 'U': '𝐔', 'V': '𝐕', 'W': '𝐖', 'X': '𝐗', 'Y': '𝐘', 'Z': '𝐙',
+        '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒', '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
       },
       italic: {
         'a': '𝘢', 'b': '𝘣', 'c': '𝘤', 'd': '𝘥', 'e': '𝘦', 'f': '𝘧', 'g': '𝘨', 'h': '𝘩', 'i': '𝘪', 'j': '𝘫', 'k': '𝘬', 'l': '𝘭', 'm': '𝘮', 'n': '𝘯', 'o': '𝘰', 'p': '𝘱', 'q': '𝘲', 'r': '𝘳', 's': '𝘴', 't': '𝘵', 'u': '𝘶', 'v': '𝘷', 'w': '𝘸', 'x': '𝘹', 'y': '𝘺', 'z': '𝘻',
@@ -846,7 +845,21 @@ const StylishTextGenerator = () => {
       },
       double: {
         'a': '𝕒', 'b': '𝕓', 'c': '𝕔', 'd': '𝕕', 'e': '𝕖', 'f': '𝕗', 'g': '𝕘', 'h': '𝕙', 'i': '𝕚', 'j': '𝕛', 'k': '𝕜', 'l': '𝕝', 'm': '𝕞', 'n': '𝕟', 'o': '𝕠', 'p': '𝕡', 'q': '𝕢', 'r': '𝕣', 's': '𝕤', 't': '𝕥', 'u': '𝕦', 'v': '𝕧', 'w': '𝕨', 'x': '𝕩', 'y': '𝕪', 'z': '𝕫',
-        'A': '𝔸', 'B': '𝔹', 'C': 'ℂ', 'D': '𝔻', 'E': '𝔼', 'F': '𝔽', 'G': '𝔾', 'H': 'ℍ', 'I': '𝕀', 'J': '𝕁', 'K': '𝕂', 'L': '𝕃', 'M': '𝕄', 'N': 'ℕ', 'O': '𝕆', 'P': 'ℙ', 'Q': 'ℚ', 'R': 'ℝ', 'S': '𝕊', 'T': '𝕋', 'U': '𝕌', 'V': '𝕍', 'W': '𝕎', 'X': '𝕏', 'Y': '𝕐', 'Z': 'ℤ'
+        'A': '𝔸', 'B': '𝔹', 'C': 'ℂ', 'D': '𝔻', 'E': '𝔼', 'F': '𝔽', 'G': '𝔾', 'H': 'ℍ', 'I': '𝕀', 'J': '𝕁', 'K': '𝕂', 'L': '𝕃', 'M': '𝕄', 'N': 'ℕ', 'O': '𝕆', 'P': 'ℙ', 'Q': 'ℚ', 'R': 'ℝ', 'S': '𝕊', 'T': '𝕋', 'U': '𝕌', 'V': '𝕍', 'W': '𝕎', 'X': '𝕏', 'Y': '𝕐', 'Z': 'ℤ',
+        '0': '𝟘', '1': '𝟙', '2': '𝟚', '3': '𝟛', '4': '𝟜', '5': '𝟝', '6': '𝟞', '7': '𝟟', '8': '𝟠', '9': '𝟡'
+      },
+      smallCaps: {
+        'a': 'ᴀ', 'b': 'ʙ', 'c': 'ᴄ', 'd': 'ᴅ', 'e': 'ᴇ', 'f': 'ꜰ', 'g': 'ɢ', 'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ', 'k': 'ᴋ', 'l': 'ʟ', 'm': 'ᴍ', 'n': 'ɴ', 'o': 'ᴏ', 'p': 'ᴘ', 'q': 'ǫ', 'r': 'ʀ', 's': 's', 't': 'ᴛ', 'u': 'ᴜ', 'v': 'ᴠ', 'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ',
+        'A': 'ᴀ', 'B': 'ʙ', 'C': 'ᴄ', 'D': 'ᴅ', 'E': 'ᴇ', 'F': 'ꜰ', 'G': 'ɢ', 'H': 'ʜ', 'I': 'ɪ', 'J': 'ᴊ', 'K': 'ᴋ', 'L': 'ʟ', 'M': 'ᴍ', 'N': 'ɴ', 'O': 'ᴏ', 'P': 'ᴘ', 'Q': 'ǫ', 'R': 'ʀ', 'S': 's', 'T': 'ᴛ', 'U': 'ᴜ', 'V': 'ᴠ', 'W': 'ᴡ', 'X': 'x', 'Y': 'ʏ', 'Z': 'ᴢ'
+      },
+      fraktur: {
+        'a': '𝔞', 'b': '𝔟', 'c': '𝔣', 'd': '𝔡', 'e': '𝔢', 'f': '𝔣', 'g': '𝔤', 'h': '𝔥', 'i': '𝔦', 'j': '𝔧', 'k': '𝔨', 'l': '𝔩', 'm': '𝔪', 'n': '𝔫', 'o': '𝔬', 'p': '𝔭', 'q': '𝔮', 'r': '𝔯', 's': '𝔰', 't': '𝔱', 'u': '𝔲', 'v': '𝔳', 'w': '𝔴', 'x': '𝔵', 'y': '𝔶', 'z': '𝔷',
+        'A': '𝔄', 'B': '𝔅', 'C': 'ℭ', 'D': '𝔇', 'E': '𝔈', 'F': '𝔉', 'G': '𝔊', 'H': 'ℌ', 'I': 'ℑ', 'J': '𝔍', 'K': '𝔎', 'L': '𝔏', 'M': '𝔐', 'N': '𝔑', 'O': '𝔒', 'P': '𝔓', 'Q': '𝔔', 'R': 'ℜ', 'S': '𝔖', 'T': '𝔗', 'U': '𝔘', 'V': '𝔙', 'W': '𝔚', 'X': '𝔛', 'Y': '𝔜', 'Z': 'ℨ'
+      },
+      mono: {
+        'a': '𝚊', 'b': '𝚋', 'c': '𝚌', 'd': '𝚍', 'e': '𝚎', 'f': '𝚏', 'g': '𝚐', 'h': '𝚑', 'i': '𝚒', 'j': '𝚓', 'k': '𝚔', 'l': '𝚕', 'm': '𝚖', 'n': '𝚗', 'o': '𝚘', 'p': '𝚙', 'q': '𝚚', 'r': '𝚛', 's': '𝚜', 't': '𝚝', 'u': '𝚞', 'v': '𝚟', 'w': '𝚠', 'x': '𝚡', 'y': '𝚢', 'z': '𝚣',
+        'A': '𝙰', 'B': '𝙱', 'C': '𝙲', 'D': '𝙳', 'E': '𝙴', 'F': '𝙵', 'G': '𝙶', 'H': '𝙷', 'I': '𝙸', 'J': '𝙹', 'K': '𝙺', 'L': '𝙻', 'M': '𝙼', 'N': '𝙽', 'O': '𝙾', 'P': '𝙿', 'Q': '𝚀', 'R': '𝚁', 'S': '𝚂', 'T': '𝚃', 'U': '𝚄', 'V': '𝚅', 'W': '𝚆', 'X': '𝚇', 'Y': '𝚈', 'Z': '𝚉',
+        '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿'
       }
     };
 
@@ -854,59 +867,145 @@ const StylishTextGenerator = () => {
       return input.split('').map(c => map[c] || c).join('');
     };
 
+    const val = text || 'Example';
+
     return [
-      { name: 'Bold', text: transform(text, charMap.bold) },
-      { name: 'Italic', text: transform(text, charMap.italic) },
-      { name: 'Script', text: transform(text, charMap.script) },
-      { name: 'Double Struck', text: transform(text, charMap.double) },
-      { name: 'Bubble', text: text.split('').map(c => {
-        const code = c.toLowerCase().charCodeAt(0);
-        if (code >= 97 && code <= 122) return String.fromCodePoint(0x24D0 + (code - 97));
-        return c;
-      }).join('') },
-      { name: 'Square', text: text.split('').map(c => {
-        const code = c.toLowerCase().charCodeAt(0);
-        if (code >= 97 && code <= 122) return String.fromCodePoint(0x1F170 + (code - 97));
-        return c;
-      }).join('') }
+      {
+        category: 'Classic Fonts',
+        items: [
+          { name: 'Bold', text: transform(val, charMap.bold) },
+          { name: 'Italic', text: transform(val, charMap.italic) },
+          { name: 'Script', text: transform(val, charMap.script) },
+          { name: 'Double Struck', text: transform(val, charMap.double) },
+          { name: 'Small Caps', text: transform(val, charMap.smallCaps) },
+          { name: 'Fraktur', text: transform(val, charMap.fraktur) },
+          { name: 'Monospace', text: transform(val, charMap.mono) },
+          { name: 'Bubble', text: val.split('').map(c => {
+            const code = c.toLowerCase().charCodeAt(0);
+            if (code >= 97 && code <= 122) return String.fromCodePoint(0x24D0 + (code - 97));
+            return c;
+          }).join('') },
+          { name: 'Square', text: val.split('').map(c => {
+            const code = c.toLowerCase().charCodeAt(0);
+            if (code >= 97 && code <= 122) return String.fromCodePoint(0x1F170 + (code - 97));
+            return c;
+          }).join('') }
+        ]
+      },
+      {
+        category: 'Gaming & PUBG Styles',
+        items: [
+          { name: 'Gun Style 1', text: `╾━╤デ╦︻ ${val} ︻╦デ╤━╼` },
+          { name: 'Gun Style 2', text: `︻╦̵̵͇̿̿̿̿╤── ${val} ──╤̵̵͇̿̿̿̿╦︻` },
+          { name: 'King Style', text: `꧁༒ ${val} ༒꧂` },
+          { name: 'Boss Style', text: `亗 ${val} 亗` },
+          { name: 'Smile Style', text: `╰‿╯ ${val} ╰‿╯` },
+          { name: 'Thunder Style', text: `⚡ ${val} ⚡` },
+          { name: 'Sword Style', text: `⚔️ ${val} ⚔️` },
+          { name: 'Ninja Style', text: `〆 ${val} 〆` },
+          { name: 'God Style', text: `ᴳᵒᵈ ${val}` },
+          { name: 'Ghost Style', text: `👻 ${val} 👻` },
+          { name: 'Biohazard', text: `☣️ ${val} ☣️` },
+          { name: 'Skull', text: `☠️ ${val} ☠️` },
+          { name: 'Slayer', text: `꧁☬ ${val} ☬꧂` }
+        ]
+      },
+      {
+        category: 'Instagram & TikTok Styles',
+        items: [
+          { name: 'Sparkle', text: `✧ ${val} ✧` },
+          { name: 'Moon', text: `☾ ${val} ☽` },
+          { name: 'Flower', text: `❀ ${val} ❀` },
+          { name: 'Quotes', text: `˗ˏˋ ${val} ˎˊ˗` },
+          { name: 'Cuddle', text: `꒰ ${val} ꒱` },
+          { name: 'Starry', text: `⋆｡˚ ${val} ˚｡⋆` },
+          { name: 'Angel', text: `ʚ ${val} ɞ` },
+          { name: 'Cherry Blossom', text: `✿ ${val} ✿` }
+        ]
+      },
+      {
+        category: 'Facebook & WhatsApp Styles',
+        items: [
+          { name: 'Bubble Chat', text: `(っ◔◡◔)っ ${val}` },
+          { name: 'Bracket', text: `【 ${val} 】` },
+          { name: 'Banner', text: `◤ ${val} ◢` },
+          { name: 'Star Box', text: `╰☆☆ ${val} ☆☆╮` },
+          { name: 'Music Bars', text: `ıllıllı ${val} ıllıllı` },
+          { name: 'Block Style', text: `░▒▓█ ${val} █▓▒░` },
+          { name: 'Heart Style', text: `❤️ ${val} ❤️` },
+          { name: 'Star Style', text: `⭐ ${val} ⭐` },
+          { name: 'Fire Style', text: `🔥 ${val} 🔥` }
+        ]
+      },
+      {
+        category: 'Invisible & Blank Text',
+        items: [
+          { name: 'Blank Text (Small)', text: '\u3164' },
+          { name: 'Blank Text (Medium)', text: '\u3164\u3164\u3164' },
+          { name: 'Blank Text (Large)', text: '\u3164\u3164\u3164\u3164\u3164' }
+        ]
+      }
     ];
   }, [text]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-12 shadow-sm">
         <div className="max-w-2xl mx-auto space-y-6">
           <div className="text-center">
-            <h3 className="text-2xl font-black text-gray-900 mb-2">Style Your Text</h3>
-            <p className="text-gray-500">Enter your text below to see it in various cool fonts.</p>
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Stylish Text Generator</h3>
+            <p className="text-gray-500">Create cool fonts for WhatsApp, Instagram, and Gaming profiles.</p>
           </div>
-          <input 
-            type="text"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Type something here..."
-            className="w-full px-8 py-6 bg-gray-50 border border-transparent rounded-3xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all text-xl font-medium"
-          />
+          <div className="relative">
+            <input 
+              type="text"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="Type your name or text here..."
+              className="w-full px-8 py-6 bg-gray-50 border border-transparent rounded-3xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all text-xl font-medium"
+            />
+            {text && (
+              <button 
+                onClick={() => setText('')}
+                className="absolute right-6 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {styles.map((style) => (
-          <div key={style.name} className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-black text-[#00a884] uppercase tracking-widest">{style.name}</span>
-              <button 
-                onClick={() => {
-                  navigator.clipboard.writeText(style.text);
-                  alert('Copied!');
-                }}
-                className="p-3 bg-gray-50 text-gray-400 hover:text-[#00a884] hover:bg-[#00a884]/10 rounded-xl transition-all"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
+      <div className="space-y-12">
+        {styles.map((category) => (
+          <div key={category.category} className="space-y-6">
+            <div className="flex items-center gap-4">
+              <h4 className="text-lg font-black text-gray-900 whitespace-nowrap">{category.category}</h4>
+              <div className="h-px bg-gray-100 w-full"></div>
             </div>
-            <div className="text-2xl text-gray-900 break-all font-medium leading-relaxed">
-              {style.text}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {category.items.map((style) => (
+                <div key={style.name} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-[10px] font-black text-[#00a884] uppercase tracking-widest bg-[#00a884]/5 px-3 py-1 rounded-full">{style.name}</span>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(style.text);
+                          alert('Copied to clipboard!');
+                        }}
+                        className="p-2.5 bg-gray-50 text-gray-400 hover:text-[#00a884] hover:bg-[#00a884]/10 rounded-xl transition-all"
+                        title="Copy to clipboard"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="text-xl text-gray-900 break-all font-medium leading-relaxed min-h-[3rem] flex items-center">
+                      {style.text || <span className="text-gray-300 italic text-sm">Type something...</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ))}
