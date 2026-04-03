@@ -3008,7 +3008,7 @@ const ReadMoreGenerator = () => {
     // \u200E is Left-to-Right Mark
     // We use a large number of them to force WhatsApp to truncate
     const separator = "\u200E".repeat(4000);
-    const fullText = `${visibleText}${separator}${hiddenText}`;
+    const fullText = `${visibleText}\n${separator}${hiddenText}`;
     
     try {
       navigator.clipboard.writeText(fullText);
@@ -3085,8 +3085,8 @@ const ReadMoreGenerator = () => {
             <div className="relative z-10 w-full max-w-[300px]">
               <div className="bg-white rounded-2xl p-4 shadow-sm relative self-start max-w-[90%]">
                 <div className="text-gray-900 text-sm leading-relaxed break-words">
-                  {visibleText || 'Your visible text...'}
-                  <span className="text-[#00a884] font-bold cursor-pointer hover:underline ml-1">...read more</span>
+                  <div className="whitespace-pre-wrap">{visibleText || 'Your visible text...'}</div>
+                  <div className="text-[#00a884] font-bold cursor-pointer hover:underline mt-1">read more</div>
                 </div>
                 <div className="flex justify-end mt-1">
                   <span className="text-[10px] text-gray-400">12:34 PM</span>
