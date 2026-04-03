@@ -1,5 +1,5 @@
 import React from 'react';
-import html2canvas from 'html2canvas';
+import { domToPng } from 'modern-screenshot';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -55,6 +55,10 @@ import {
   MousePointer2,
   Hand,
   MessageSquare,
+  MessageCircle,
+  Eye,
+  EyeOff,
+  Info,
   Signal,
   Wifi,
   Battery,
@@ -100,7 +104,8 @@ const iconMap: Record<string, any> = {
   Sparkles,
   RefreshCw,
   Camera,
-  MessageSquare
+  MessageSquare,
+  MessageCircle
 };
 
 // --- AI Detector Component ---
@@ -1115,17 +1120,13 @@ const FakeWhatsAppGenerator = () => {
       // Small delay to ensure everything is rendered
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const canvas = await (html2canvas as any)(previewRef.current, {
+      const dataURL = await domToPng(previewRef.current, {
         backgroundColor: '#ffffff',
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        width: previewRef.current.offsetWidth,
-        height: previewRef.current.offsetHeight,
+        scale: 2,
+        width: 375,
+        height: 720
       });
       
-      const dataURL = canvas.toDataURL('image/png', 1.0);
       const link = document.createElement('a');
       link.href = dataURL;
       const safeName = contactName.replace(/[^a-z0-9-_]+/gi, '_');
@@ -1372,10 +1373,10 @@ const FakeWhatsAppGenerator = () => {
             </Button>
           </div>
 
-          <div className="flex justify-center">
+          <div className="flex justify-center w-full overflow-x-auto pb-10 custom-scrollbar">
             {/* Phone Mockup */}
             <div 
-              className="w-[375px] h-[720px] rounded-[40px] border-[8px] overflow-hidden relative shadow-2xl flex flex-col font-sans"
+              className="w-[375px] h-[720px] shrink-0 rounded-[40px] border-[8px] overflow-hidden relative shadow-2xl flex flex-col font-sans mx-auto"
               style={{ 
                 backgroundColor: '#ffffff',
                 borderColor: '#111827',
@@ -1383,22 +1384,24 @@ const FakeWhatsAppGenerator = () => {
               }}
             >
               {/* Capture Area */}
-              <div ref={previewRef} className="flex-1 flex flex-col overflow-hidden bg-white">
+              <div 
+                ref={previewRef} 
+                className="w-full h-full flex flex-col overflow-hidden bg-white"
+                style={{ width: '375px', height: '720px' }}
+              >
                 {/* Status Bar */}
                 <div 
-                  className="px-6 py-2 flex justify-between items-center text-[11px] font-medium shrink-0"
+                  className="px-4 py-2 flex justify-between items-center text-[12px] font-medium shrink-0"
                   style={{ backgroundColor: '#075e54', color: '#ffffff' }}
                 >
-                  <div>{formatTime(timeDisplay)}</div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex gap-0.5">
-                      <Signal className="w-3 h-3" />
-                      {carrierSignals === '2' && <Signal className="w-3 h-3" />}
-                    </div>
-                    {wifiEnabled && <Wifi className="w-3 h-3" />}
-                    <div className="flex items-center gap-1">
-                      <span className="text-[9px]">{batteryLevel}%</span>
-                      <div className="w-5 h-2.5 border rounded-[2px] relative p-[1px]" style={{ borderColor: 'rgba(255,255,255,0.6)' }}>
+                  <div className="font-bold">{timeDisplay}</div>
+                  <div className="flex items-center gap-1.5">
+                    <Signal className="w-3.5 h-3.5" />
+                    {carrierSignals === '2' && <Signal className="w-3.5 h-3.5" />}
+                    {wifiEnabled && <Wifi className="w-3.5 h-3.5" />}
+                    <div className="flex items-center gap-1 ml-1">
+                      <span className="text-[10px] font-bold">{batteryLevel}%</span>
+                      <div className="w-6 h-3 border rounded-[3px] relative p-[1px]" style={{ borderColor: 'rgba(255,255,255,0.8)' }}>
                         <div 
                           className={`h-full rounded-[1px] ${batteryLevel <= 20 ? 'bg-red-500' : ''}`}
                           style={{ 
@@ -1406,7 +1409,7 @@ const FakeWhatsAppGenerator = () => {
                             backgroundColor: batteryLevel <= 20 ? '#ef4444' : '#ffffff'
                           }}
                         />
-                        <div className="absolute -right-[3px] top-1/2 -translate-y-1/2 w-[2px] h-1.5 rounded-r-sm" style={{ backgroundColor: 'rgba(255,255,255,0.6)' }} />
+                        <div className="absolute -right-[3px] top-1/2 -translate-y-1/2 w-[2px] h-1.5 rounded-r-sm" style={{ backgroundColor: 'rgba(255,255,255,0.8)' }} />
                       </div>
                     </div>
                   </div>
@@ -1414,26 +1417,28 @@ const FakeWhatsAppGenerator = () => {
 
                 {/* Chat Header */}
                 <div 
-                  className="border-b px-4 py-3 flex items-center justify-between shrink-0 shadow-sm z-10"
+                  className="border-b px-3 py-2 flex items-center justify-between shrink-0 shadow-sm z-10"
                   style={{ backgroundColor: '#ffffff', borderColor: '#f3f4f6' }}
                 >
-                  <div className="flex items-center gap-3">
-                    <ArrowLeft className="w-5 h-5" style={{ color: '#4b5563' }} />
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shrink-0" style={{ backgroundColor: '#00a884', color: '#ffffff' }}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <ArrowLeft className="w-6 h-6 shrink-0" style={{ color: '#00a884' }} />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shrink-0 bg-gray-200" style={{ color: '#ffffff' }}>
                       {profilePic ? (
                         <img src={profilePic} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
-                        <UserIcon className="w-6 h-6" />
+                        <div className="w-full h-full bg-[#00a884] flex items-center justify-center">
+                          <UserIcon className="w-6 h-6" />
+                        </div>
                       )}
                     </div>
-                    <div className="min-w-0">
-                      <div className="font-bold text-sm truncate" style={{ color: '#111827' }}>{contactName || 'John Doe'}</div>
-                      <div className="text-[10px]" style={{ color: '#9ca3af' }}>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-[15px] truncate leading-tight" style={{ color: '#111827' }}>{contactName || 'John Doe'}</div>
+                      <div className="text-[11px] leading-tight" style={{ color: '#00a884' }}>
                         {contactStatus === 'online' ? 'Online' : contactStatus === 'typing' ? 'typing...' : 'Last seen recently'}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4" style={{ color: '#6b7280' }}>
+                  <div className="flex items-center gap-4 ml-2" style={{ color: '#00a884' }}>
                     <Video className="w-5 h-5" />
                     <Phone className="w-5 h-5" />
                     <MoreVertical className="w-5 h-5" />
@@ -1446,17 +1451,18 @@ const FakeWhatsAppGenerator = () => {
                   style={{ 
                     backgroundColor: '#efeae2',
                     backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
-                    backgroundSize: 'contain'
+                    backgroundSize: '400px'
                   }}
                 >
                   <div className="flex justify-center my-4">
-                    <span className="px-3 py-1 rounded-lg text-[10px] font-medium shadow-sm uppercase tracking-wider" style={{ backgroundColor: 'rgba(255,255,255,0.8)', color: '#6b7280' }}>Today</span>
+                    <span className="px-3 py-1 rounded-lg text-[11px] font-bold shadow-sm uppercase tracking-wider" style={{ backgroundColor: '#d1e4f3', color: '#4b5563' }}>Today</span>
                   </div>
                   
                   <div className="flex justify-center mb-4">
-                    <div className="px-4 py-2 rounded-lg text-[10px] text-center shadow-sm max-w-[90%]" style={{ backgroundColor: '#fff9c4', color: '#4b5563' }}>
-                      <span className="flex items-center justify-center gap-1">
-                        <Clock className="w-3 h-3" /> Messages are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them. Click to learn more.
+                    <div className="px-4 py-2 rounded-xl text-[11px] text-center shadow-sm max-w-[95%] border border-yellow-100" style={{ backgroundColor: '#fff9c4', color: '#4b5563' }}>
+                      <span className="flex items-center justify-center gap-2">
+                        <Clock className="w-3.5 h-3.5 shrink-0" /> 
+                        <span>Messages are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them. Click to learn more.</span>
                       </span>
                     </div>
                   </div>
@@ -1464,33 +1470,33 @@ const FakeWhatsAppGenerator = () => {
                   {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.type === 'sent' ? 'justify-end' : 'justify-start'}`}>
                       <div 
-                        className={`max-w-[85%] px-3 py-2 rounded-xl relative shadow-sm text-sm ${
+                        className={`max-w-[85%] px-3 py-1.5 rounded-xl relative shadow-sm text-[14px] ${
                           msg.type === 'sent' 
                             ? 'rounded-tr-none' 
                             : 'rounded-tl-none'
                         }`}
-                        style={{ backgroundColor: msg.type === 'sent' ? '#dcf8c6' : '#ffffff' }}
+                        style={{ backgroundColor: msg.type === 'sent' ? '#e1ffc7' : '#ffffff' }}
                       >
                         <div className="leading-relaxed whitespace-pre-wrap" style={{ color: '#111827' }}>{msg.text}</div>
-                        <div className="flex items-center justify-end gap-1 mt-1">
-                          <span className="text-[9px]" style={{ color: '#9ca3af' }}>{formatTime(msg.time)}</span>
+                        <div className="flex items-center justify-end gap-1 mt-0.5">
+                          <span className="text-[10px]" style={{ color: '#667781' }}>{formatTime(msg.time)}</span>
                           {msg.type === 'sent' && (
                             <span className="shrink-0">
-                              {msg.status === 'sent' && <Check className="w-3 h-3" style={{ color: '#9ca3af' }} />}
-                              {msg.status === 'delivered' && <CheckCheck className="w-3 h-3" style={{ color: '#9ca3af' }} />}
-                              {msg.status === 'seen' && <CheckCheck className="w-3 h-3" style={{ color: '#34b7f1' }} />}
+                              {msg.status === 'sent' && <Check className="w-3.5 h-3.5" style={{ color: '#667781' }} />}
+                              {msg.status === 'delivered' && <CheckCheck className="w-3.5 h-3.5" style={{ color: '#667781' }} />}
+                              {msg.status === 'seen' && <CheckCheck className="w-3.5 h-3.5" style={{ color: '#53bdeb' }} />}
                             </span>
                           )}
                         </div>
                         {/* Tail */}
                         <div 
-                          className={`absolute top-0 w-2 h-3 ${
+                          className={`absolute top-0 w-2.5 h-3.5 ${
                             msg.type === 'sent' 
-                              ? '-right-1.5' 
-                              : '-left-1.5'
+                              ? '-right-2' 
+                              : '-left-2'
                           }`}
                           style={{
-                            backgroundColor: msg.type === 'sent' ? '#dcf8c6' : '#ffffff',
+                            backgroundColor: msg.type === 'sent' ? '#e1ffc7' : '#ffffff',
                             clipPath: msg.type === 'sent' 
                               ? 'polygon(0 0, 0 100%, 100% 0)' 
                               : 'polygon(100% 0, 100% 100%, 0 0)'
@@ -1503,13 +1509,13 @@ const FakeWhatsAppGenerator = () => {
 
                 {/* Message Input Area */}
                 <div className="p-2 flex items-center gap-2 shrink-0" style={{ backgroundColor: '#f0f2f6' }}>
-                  <div className="flex-1 rounded-full px-4 py-2 flex items-center gap-3 shadow-sm" style={{ backgroundColor: '#ffffff' }}>
-                    <Smile className="w-6 h-6" style={{ color: '#9ca3af' }} />
-                    <div className="flex-1 text-sm" style={{ color: '#9ca3af' }}>Type a message</div>
-                    <Paperclip className="w-6 h-6 -rotate-45" style={{ color: '#9ca3af' }} />
-                    <Camera className="w-6 h-6" style={{ color: '#9ca3af' }} />
+                  <div className="flex-1 rounded-full px-4 py-2.5 flex items-center gap-3 shadow-sm" style={{ backgroundColor: '#ffffff' }}>
+                    <Smile className="w-6 h-6" style={{ color: '#8696a0' }} />
+                    <div className="flex-1 text-[15px]" style={{ color: '#8696a0' }}>Type a message</div>
+                    <Paperclip className="w-6 h-6 -rotate-45" style={{ color: '#8696a0' }} />
+                    <Camera className="w-6 h-6" style={{ color: '#8696a0' }} />
                   </div>
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center shadow-md" style={{ backgroundColor: '#00a884', color: '#ffffff' }}>
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center shadow-md shrink-0" style={{ backgroundColor: '#00a884', color: '#ffffff' }}>
                     <Mic className="w-6 h-6" />
                   </div>
                 </div>
@@ -2990,6 +2996,118 @@ const PlagiarismChecker = () => {
   );
 };
 
+const ReadMoreGenerator = () => {
+  const [visibleText, setVisibleText] = React.useState('');
+  const [hiddenText, setHiddenText] = React.useState('');
+  const [copied, setCopied] = React.useState(false);
+
+  const copyToClipboard = () => {
+    if (!visibleText && !hiddenText) return;
+    
+    // The "Read More" magic separator
+    // \u200E is Left-to-Right Mark
+    // We use a large number of them to force WhatsApp to truncate
+    const separator = "\u200E".repeat(4000);
+    const fullText = `${visibleText}${separator}${hiddenText}`;
+    
+    try {
+      navigator.clipboard.writeText(fullText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      alert('Failed to copy to clipboard. Please try manually.');
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-gray-100 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Input Side */}
+        <div className="space-y-8">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+              <Eye className="w-4 h-4 text-[#00a884]" /> Visible Text (Before "Read More")
+            </label>
+            <textarea
+              value={visibleText}
+              onChange={(e) => setVisibleText(e.target.value)}
+              placeholder="e.g., I have a secret for you..."
+              className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 min-h-[120px] text-lg"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+              <EyeOff className="w-4 h-4 text-red-500" /> Hidden Text (After "Read More")
+            </label>
+            <textarea
+              value={hiddenText}
+              onChange={(e) => setHiddenText(e.target.value)}
+              placeholder="e.g., You are awesome! 😂"
+              className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 min-h-[120px] text-lg"
+            />
+          </div>
+
+          <div className="p-6 bg-blue-50 rounded-3xl border border-blue-100">
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-200">
+                <Info className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h4 className="font-black text-blue-900 mb-1">How it works</h4>
+                <p className="text-sm text-blue-700 leading-relaxed">
+                  We insert special invisible characters between your texts. When you paste this into WhatsApp, it will show the first part with a "Read More" button.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Button 
+            onClick={copyToClipboard}
+            className="w-full py-4 text-lg shadow-lg shadow-[#00a884]/20"
+          >
+            {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+            {copied ? 'Copied to Clipboard!' : 'Generate & Copy Message'}
+          </Button>
+        </div>
+
+        {/* Preview Side */}
+        <div className="space-y-6">
+          <label className="block text-sm font-bold text-gray-700 flex items-center gap-2">
+            <MessageCircle className="w-4 h-4 text-[#00a884]" /> WhatsApp Preview
+          </label>
+          
+          <div className="bg-[#e5ddd5] rounded-[2.5rem] p-8 min-h-[400px] flex flex-col items-center justify-center relative overflow-hidden border border-gray-200">
+            {/* WhatsApp Background Pattern (Simplified) */}
+            <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 0)', backgroundSize: '20px 20px' }} />
+            
+            <div className="relative z-10 w-full max-w-[300px]">
+              <div className="bg-white rounded-2xl p-4 shadow-sm relative self-start max-w-[90%]">
+                <div className="text-gray-900 text-sm leading-relaxed break-words">
+                  {visibleText || 'Your visible text...'}
+                  <span className="text-[#00a884] font-bold cursor-pointer hover:underline ml-1">...read more</span>
+                </div>
+                <div className="flex justify-end mt-1">
+                  <span className="text-[10px] text-gray-400">12:34 PM</span>
+                </div>
+                {/* Bubble Tail */}
+                <div className="absolute top-0 -left-2 w-4 h-4 bg-white" style={{ clipPath: 'polygon(100% 0, 0 0, 100% 100%)' }} />
+              </div>
+
+              <div className="mt-4 text-center">
+                <p className="text-xs text-gray-500 font-medium italic">
+                  Note: The "Read More" button will appear automatically when you paste the generated text into WhatsApp.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ToolDetail({ settings }: ToolDetailProps) {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -3061,6 +3179,7 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
       case 'stylish-text-generator': return <StylishTextGenerator />;
       case 'text-repeater': return <TextRepeater />;
       case 'fake-whatsapp-screenshot': return <FakeWhatsAppGenerator />;
+      case 'whatsapp-read-more': return <ReadMoreGenerator />;
       case 'qr-code-scanner': return <QRCodeScanner />;
       case 'pdf-editor': return <PDFEditor />;
       default: return (
@@ -3210,6 +3329,22 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
           "Live preview allows you to see changes instantly as you edit.",
           "High-quality PNG export suitable for sharing on social media.",
           "Privacy-focused: All generation happens locally in your browser."
+        ]
+      };
+    }
+    if (tool.slug === 'whatsapp-read-more') {
+      return {
+        howToUse: [
+          "Enter the text you want to be visible immediately in the first box.",
+          "Enter the 'secret' or prank message in the second box.",
+          "Click 'Generate & Copy Message' to get the special formatted text.",
+          "Paste the text into any WhatsApp chat - the 'Read More' button will appear automatically."
+        ],
+        benefits: [
+          "Create hilarious pranks and surprises for your friends.",
+          "Hide spoilers or long punchlines in group chats.",
+          "No special apps required - works with the standard WhatsApp app.",
+          "Simple one-click generation and copying."
         ]
       };
     }

@@ -257,5 +257,14 @@ export const TOOLS: Tool[] = [
     icon: 'MessageSquare',
     category: 'Social',
     enabled: true
+  },
+  {
+    id: 'whatsapp-read-more',
+    title: 'WhatsApp "Read More" Prank Generator',
+    slug: 'whatsapp-read-more',
+    description: 'Create prank messages with a "Read More" button to hide funny punchlines in WhatsApp chats.',
+    icon: 'MessageCircle',
+    category: 'Social',
+    enabled: true
   }
 ];

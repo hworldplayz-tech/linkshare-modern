@@ -998,6 +998,68 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
+                <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all ${settings.heroShow ? 'bg-[#00a884] shadow-[#00a884]/20' : 'bg-gray-300 shadow-gray-200'}`}>
+                        <LayoutGrid className="text-white w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-gray-900">Hero Section Settings</h3>
+                        <p className="text-xs text-gray-500">Manage the main heading and subtitle on the homepage.</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setSettings({...settings, heroShow: !settings.heroShow})}
+                      className={`w-14 h-7 rounded-full transition-all relative ${settings.heroShow ? 'bg-[#00a884]' : 'bg-gray-300'}`}
+                    >
+                      <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-sm ${settings.heroShow ? 'left-8' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  {settings.heroShow && (
+                    <div className="space-y-6 pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Hero Title</label>
+                          <input 
+                            type="text" 
+                            value={settings.heroTitle}
+                            onChange={(e) => setSettings({...settings, heroTitle: e.target.value})}
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                            placeholder="Main Heading..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">Title Size</label>
+                          <select 
+                            value={settings.heroTitleSize}
+                            onChange={(e) => setSettings({...settings, heroTitleSize: e.target.value as any})}
+                            className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 font-bold"
+                          >
+                            <option value="h1">Extra Large (H1)</option>
+                            <option value="h2">Large (H2)</option>
+                            <option value="h3">Medium (H3)</option>
+                            <option value="h4">Small (H4)</option>
+                            <option value="h5">Extra Small (H5)</option>
+                            <option value="h6">Tiny (H6)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Hero Subtitle / Description</label>
+                        <textarea 
+                          value={settings.heroSubtitle}
+                          onChange={(e) => setSettings({...settings, heroSubtitle: e.target.value})}
+                          rows={3}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                          placeholder="Short description below heading..."
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Tips & Tricks Section Image (Upload or URL)</label>
                   <div className="flex flex-col gap-4">
