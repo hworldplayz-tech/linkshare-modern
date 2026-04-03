@@ -3268,6 +3268,222 @@ const WhatsAppLinkGenerator = () => {
   );
 };
 
+const WhatsAppDPBorderMaker = () => {
+  const [image, setImage] = React.useState<string | null>(null);
+  const [borderWidth, setBorderWidth] = React.useState(10);
+  const [borderColor, setBorderColor] = React.useState('#00a884');
+  const [borderStyle, setBorderStyle] = React.useState<'solid' | 'dashed' | 'double'>('solid');
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImage(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const downloadImage = () => {
+    if (!image) return;
+    setIsDownloading(true);
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const size = Math.max(img.width, img.height);
+      canvas.width = size;
+      canvas.height = size;
+
+      if (ctx) {
+        // Draw circular clipping path
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+        ctx.clip();
+
+        // Draw image centered
+        const offsetX = (size - img.width) / 2;
+        const offsetY = (size - img.height) / 2;
+        ctx.drawImage(img, offsetX, offsetY);
+
+        // Draw border
+        ctx.lineWidth = (borderWidth / 100) * size;
+        ctx.strokeStyle = borderColor;
+        
+        if (borderStyle === 'dashed') {
+          ctx.setLineDash([size / 20, size / 40]);
+        } else if (borderStyle === 'double') {
+          // Inner border
+          ctx.lineWidth = ((borderWidth / 100) * size) / 3;
+          ctx.stroke();
+          // Outer border
+          ctx.beginPath();
+          ctx.arc(size / 2, size / 2, (size / 2) - (ctx.lineWidth * 2), 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          ctx.stroke();
+        }
+
+        const link = document.createElement('a');
+        link.download = 'whatsapp-dp-border.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      }
+      setIsDownloading(false);
+    };
+    img.src = image;
+  };
+
+  return (
+    <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-gray-100 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Controls Side */}
+        <div className="space-y-8">
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <Upload className="w-4 h-4 text-[#00a884]" /> Upload Profile Picture
+              </label>
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-40 border-2 border-dashed border-gray-200 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:border-[#00a884] hover:bg-[#00a884]/5 transition-all group"
+              >
+                <Camera className="w-8 h-8 text-gray-300 group-hover:text-[#00a884] mb-2" />
+                <span className="text-sm font-bold text-gray-400 group-hover:text-[#00a884]">Click to upload image</span>
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            {image && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center justify-between">
+                    <span>Border Width</span>
+                    <span className="text-[#00a884]">{borderWidth}px</span>
+                  </label>
+                  <input 
+                    type="range" 
+                    min="1" 
+                    max="50" 
+                    value={borderWidth}
+                    onChange={(e) => setBorderWidth(parseInt(e.target.value))}
+                    className="w-full h-2 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-[#00a884]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-3">Border Color</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {['#00a884', '#2563eb', '#dc2626', '#9333ea', '#f59e0b', '#000000'].map(color => (
+                        <button
+                          key={color}
+                          onClick={() => setBorderColor(color)}
+                          className={`w-8 h-8 rounded-full border-2 ${borderColor === color ? 'border-gray-900 scale-110' : 'border-transparent'}`}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                      <input 
+                        type="color" 
+                        value={borderColor}
+                        onChange={(e) => setBorderColor(e.target.value)}
+                        className="w-8 h-8 rounded-full cursor-pointer border-none p-0 overflow-hidden"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-3">Style</label>
+                    <select 
+                      value={borderStyle}
+                      onChange={(e) => setBorderStyle(e.target.value as any)}
+                      className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 font-bold text-gray-700"
+                    >
+                      <option value="solid">Solid</option>
+                      <option value="dashed">Dashed</option>
+                      <option value="double">Double</option>
+                    </select>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={downloadImage}
+                  className="w-full py-4 text-lg shadow-lg shadow-[#00a884]/20"
+                >
+                  {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                  Download DP with Border
+                </Button>
+              </motion.div>
+            )}
+          </div>
+        </div>
+
+        {/* Preview Side */}
+        <div className="flex flex-col items-center justify-center space-y-8">
+          <div className="relative group">
+            <div className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden shadow-2xl shadow-gray-200/50 relative">
+              {image ? (
+                <div 
+                  className="w-full h-full rounded-full overflow-hidden relative"
+                  style={{ 
+                    padding: `${borderWidth}px`,
+                    backgroundColor: borderStyle === 'solid' ? borderColor : 'transparent'
+                  }}
+                >
+                  <div 
+                    className="w-full h-full rounded-full overflow-hidden bg-white relative"
+                    style={{
+                      border: borderStyle !== 'solid' ? `${borderWidth}px ${borderStyle} ${borderColor}` : 'none'
+                    }}
+                  >
+                    <img 
+                      src={image} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center p-8">
+                  <Camera className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                  <p className="text-sm font-bold text-gray-300">Upload a photo to see the preview</p>
+                </div>
+              )}
+            </div>
+            {image && (
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-lg border border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                Circular Preview
+              </div>
+            )}
+          </div>
+
+          {image && (
+            <div className="text-center max-w-xs">
+              <p className="text-xs text-gray-400 font-medium">
+                Note: WhatsApp will automatically crop your image into a circle. This tool helps you add a border that fits perfectly within that circle.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ToolDetail({ settings }: ToolDetailProps) {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -3341,6 +3557,7 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
       case 'fake-whatsapp-screenshot': return <FakeWhatsAppGenerator />;
       case 'whatsapp-read-more': return <ReadMoreGenerator />;
       case 'whatsapp-link-generator': return <WhatsAppLinkGenerator />;
+      case 'whatsapp-dp-border': return <WhatsAppDPBorderMaker />;
       case 'qr-code-scanner': return <QRCodeScanner />;
       case 'pdf-editor': return <PDFEditor />;
       default: return (
@@ -3522,6 +3739,23 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
           "Perfect for Instagram bios, Facebook ads, and business cards.",
           "Generate high-quality QR codes that match your brand colors.",
           "Pre-filled messages save time for your users and improve conversion."
+        ]
+      };
+    }
+    if (tool.slug === 'whatsapp-dp-border') {
+      return {
+        howToUse: [
+          "Upload your profile picture using the upload box.",
+          "Adjust the border width using the slider to your liking.",
+          "Choose a color from the presets or use the color picker for a custom shade.",
+          "Select a border style (Solid, Dashed, or Double) for a unique look.",
+          "Click 'Download DP with Border' to save your new profile picture."
+        ],
+        benefits: [
+          "Make your profile stand out in chat lists and group members lists.",
+          "Create a professional and branded look for your business account.",
+          "Easy to use with real-time preview of the circular crop.",
+          "High-quality downloads ready to be used as your WhatsApp DP."
         ]
       };
     }

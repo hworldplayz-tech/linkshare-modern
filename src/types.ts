@@ -275,5 +275,14 @@ export const TOOLS: Tool[] = [
     icon: 'Link',
     category: 'Social',
     enabled: true
+  },
+  {
+    id: 'whatsapp-dp-border',
+    title: 'WhatsApp DP Border Maker',
+    slug: 'whatsapp-dp-border',
+    description: 'Create professional-looking profile picture borders to make your WhatsApp DP stand out.',
+    icon: 'Circle',
+    category: 'Social',
+    enabled: true
   }
 ];
