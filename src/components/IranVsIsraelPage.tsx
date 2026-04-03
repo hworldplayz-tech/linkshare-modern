@@ -50,38 +50,34 @@ interface CountryVote {
 export const IranVsIsraelPage = () => {
   const [poll, setPoll] = useState<PollData | null>(null);
   const [countryVotes, setCountryVotes] = useState<CountryVote[]>([]);
-  const [userVotesToday, setUserVotesToday] = useState(0);
+  const [hasVoted, setHasVoted] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
   const [userCountry, setUserCountry] = useState<{ code: string; name: string }>({ code: 'US', name: 'United States' });
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const MAX_VOTES_PER_DAY = 5;
-
   useEffect(() => {
     // Fetch user country with multiple fallbacks
     const fetchCountry = async () => {
-      try {
-        // Try ipwho.is (free, supports HTTPS)
-        const res = await fetch('https://ipwho.is/');
-        const data = await res.json();
-        if (data.success) {
-          setUserCountry({ code: data.country_code, name: data.country });
-          return;
-        }
-      } catch (err) {
-        console.warn('ipwho.is failed, trying ipapi.co');
-      }
+      // List of IP geolocation APIs to try
+      const apis = [
+        { url: 'https://ipapi.co/json/', map: (d: any) => ({ code: d.country_code, name: d.country_name }) },
+        { url: 'https://ipwho.is/', map: (d: any) => d.success ? ({ code: d.country_code, name: d.country }) : null },
+        { url: 'https://api.db-ip.com/v2/free/self', map: (d: any) => ({ code: d.countryCode, name: d.countryName }) }
+      ];
 
-      try {
-        // Try ipapi.co as fallback
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        if (data.country_code && data.country_name) {
-          setUserCountry({ code: data.country_code, name: data.country_name });
-          return;
+      for (const api of apis) {
+        try {
+          const res = await fetch(api.url);
+          if (!res.ok) continue;
+          const data = await res.json();
+          const result = api.map(data);
+          if (result && result.code && result.name) {
+            setUserCountry(result);
+            return;
+          }
+        } catch (err) {
+          console.warn(`API ${api.url} failed:`, err);
         }
-      } catch (err) {
-        console.warn('All IP APIs failed, using default country');
       }
     };
 
@@ -113,11 +109,10 @@ export const IranVsIsraelPage = () => {
       setCountryVotes(votes);
     });
 
-    // Check local storage for votes today
-    const today = new Date().toISOString().split('T')[0];
-    const storedVotes = localStorage.getItem(`votes_${today}`);
-    if (storedVotes) {
-      setUserVotesToday(parseInt(storedVotes));
+    // Check local storage for lifetime vote
+    const storedVote = localStorage.getItem('has_voted_iran_vs_israel');
+    if (storedVote === 'true') {
+      setHasVoted(true);
     }
 
     return () => {
@@ -127,8 +122,8 @@ export const IranVsIsraelPage = () => {
   }, []);
 
   const handleVote = async (side: 'iran' | 'israel') => {
-    if (userVotesToday >= MAX_VOTES_PER_DAY) {
-      alert('You have reached your daily vote limit of 5 votes.');
+    if (hasVoted) {
+      alert('You have already submitted your vote. Only one vote is allowed per person.');
       return;
     }
 
@@ -158,11 +153,9 @@ export const IranVsIsraelPage = () => {
         });
       }
 
-      // Update local storage
-      const today = new Date().toISOString().split('T')[0];
-      const newVoteCount = userVotesToday + 1;
-      setUserVotesToday(newVoteCount);
-      localStorage.setItem(`votes_${today}`, newVoteCount.toString());
+      // Update local storage for lifetime vote
+      setHasVoted(true);
+      localStorage.setItem('has_voted_iran_vs_israel', 'true');
 
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
@@ -255,10 +248,10 @@ export const IranVsIsraelPage = () => {
             <h2 className="text-4xl font-black text-gray-900 mb-8">Israel</h2>
             <Button 
               onClick={() => handleVote('israel')}
-              disabled={isVoting || userVotesToday >= MAX_VOTES_PER_DAY}
+              disabled={isVoting || hasVoted}
               className="w-full max-w-[200px] bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-50"
             >
-              VOTE
+              {hasVoted ? 'VOTED' : 'VOTE'}
             </Button>
             <div className="mt-12">
               <div className="text-5xl font-black text-blue-600 mb-1">{israelVotes.toLocaleString()}</div>
@@ -282,10 +275,10 @@ export const IranVsIsraelPage = () => {
             <h2 className="text-4xl font-black text-gray-900 mb-8">Iran</h2>
             <Button 
               onClick={() => handleVote('iran')}
-              disabled={isVoting || userVotesToday >= MAX_VOTES_PER_DAY}
+              disabled={isVoting || hasVoted}
               className="w-full max-w-[200px] bg-green-600 hover:bg-green-700 text-white py-4 rounded-2xl font-black text-lg shadow-lg shadow-green-200 transition-all active:scale-95 disabled:opacity-50"
             >
-              VOTE
+              {hasVoted ? 'VOTED' : 'VOTE'}
             </Button>
             <div className="mt-12">
               <div className="text-5xl font-black text-green-600 mb-1">{iranVotes.toLocaleString()}</div>
@@ -298,7 +291,7 @@ export const IranVsIsraelPage = () => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-6 py-3 bg-white rounded-2xl border border-gray-100 shadow-sm text-gray-500 font-bold">
             <Info className="w-5 h-5 text-blue-500" />
-            You have {MAX_VOTES_PER_DAY - userVotesToday} votes left today
+            {hasVoted ? 'Thank you for your vote!' : 'Only one vote allowed per person.'}
           </div>
         </div>
 
