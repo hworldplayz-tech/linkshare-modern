@@ -3108,6 +3108,166 @@ const ReadMoreGenerator = () => {
   );
 };
 
+const WhatsAppLinkGenerator = () => {
+  const [phoneNumber, setPhoneNumber] = React.useState('');
+  const [message, setMessage] = React.useState('');
+  const [generatedLink, setGeneratedLink] = React.useState('');
+  const [copied, setCopied] = React.useState(false);
+  const [qrColor, setQrColor] = React.useState('#000000');
+  const [qrBgColor, setQrBgColor] = React.useState('#ffffff');
+
+  const generateLink = () => {
+    if (!phoneNumber) return;
+    // Remove non-numeric characters
+    const cleanNumber = phoneNumber.replace(/\D/g, '');
+    const encodedMessage = encodeURIComponent(message);
+    const link = `https://wa.me/${cleanNumber}${message ? `?text=${encodedMessage}` : ''}`;
+    setGeneratedLink(link);
+  };
+
+  const copyToClipboard = () => {
+    if (!generatedLink) return;
+    navigator.clipboard.writeText(generatedLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const downloadQR = () => {
+    const canvas = document.getElementById('whatsapp-qr') as HTMLCanvasElement;
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = 'whatsapp-link-qr.png';
+    link.href = url;
+    link.click();
+  };
+
+  return (
+    <div className="bg-white rounded-[3rem] p-8 md:p-12 border border-gray-100 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Input Side */}
+        <div className="space-y-8">
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <Phone className="w-4 h-4 text-[#00a884]" /> Phone Number (with Country Code)
+              </label>
+              <input
+                type="text"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="e.g., 923001234567"
+                className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 text-lg"
+              />
+              <p className="mt-2 text-xs text-gray-400">Don't include '+' or '00' at the start.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-[#00a884]" /> Pre-filled Message (Optional)
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="e.g., Hello, I am interested in your services!"
+                className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 min-h-[120px] text-lg"
+              />
+            </div>
+
+            <Button 
+              onClick={generateLink}
+              disabled={!phoneNumber}
+              className="w-full py-4 text-lg shadow-lg shadow-[#00a884]/20"
+            >
+              <Sparkles className="w-5 h-5" /> Generate WhatsApp Link
+            </Button>
+          </div>
+
+          {generatedLink && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-6 bg-[#00a884]/5 rounded-[2rem] border border-[#00a884]/10 space-y-4"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <label className="block text-[10px] font-black text-[#00a884] uppercase tracking-widest mb-1">Your Link</label>
+                  <p className="text-sm font-medium text-gray-900 truncate">{generatedLink}</p>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={copyToClipboard}
+                    className="p-3 bg-white text-[#00a884] rounded-xl border border-[#00a884]/20 hover:bg-[#00a884] hover:text-white transition-all shadow-sm"
+                    title="Copy Link"
+                  >
+                    {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                  </button>
+                  <a 
+                    href={generatedLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-3 bg-white text-[#00a884] rounded-xl border border-[#00a884]/20 hover:bg-[#00a884] hover:text-white transition-all shadow-sm"
+                    title="Open Link"
+                  >
+                    <ExternalLink className="w-5 h-5" />
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* QR Code Side */}
+        <div className="space-y-8">
+          <div className="bg-gray-50 rounded-[2.5rem] p-8 flex flex-col items-center justify-center border border-gray-100 min-h-[400px]">
+            <div className="bg-white p-6 rounded-[2rem] shadow-xl shadow-gray-200/50 mb-8">
+              <QRCodeCanvas
+                id="whatsapp-qr"
+                value={generatedLink || 'https://wa.me/'}
+                size={200}
+                level="H"
+                fgColor={qrColor}
+                bgColor={qrBgColor}
+                includeMargin={true}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 text-center">QR Color</label>
+                <input 
+                  type="color" 
+                  value={qrColor}
+                  onChange={(e) => setQrColor(e.target.value)}
+                  className="w-full h-10 rounded-xl cursor-pointer border-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 text-center">BG Color</label>
+                <input 
+                  type="color" 
+                  value={qrBgColor}
+                  onChange={(e) => setQrBgColor(e.target.value)}
+                  className="w-full h-10 rounded-xl cursor-pointer border-none"
+                />
+              </div>
+            </div>
+
+            <Button 
+              variant="outline"
+              disabled={!generatedLink}
+              onClick={downloadQR}
+              className="w-full max-w-xs py-3 rounded-xl border-2"
+            >
+              <Download className="w-4 h-4" /> Download QR Code
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ToolDetail({ settings }: ToolDetailProps) {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -3180,6 +3340,7 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
       case 'text-repeater': return <TextRepeater />;
       case 'fake-whatsapp-screenshot': return <FakeWhatsAppGenerator />;
       case 'whatsapp-read-more': return <ReadMoreGenerator />;
+      case 'whatsapp-link-generator': return <WhatsAppLinkGenerator />;
       case 'qr-code-scanner': return <QRCodeScanner />;
       case 'pdf-editor': return <PDFEditor />;
       default: return (
@@ -3345,6 +3506,22 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
           "Hide spoilers or long punchlines in group chats.",
           "No special apps required - works with the standard WhatsApp app.",
           "Simple one-click generation and copying."
+        ]
+      };
+    }
+    if (tool.slug === 'whatsapp-link-generator') {
+      return {
+        howToUse: [
+          "Enter your phone number including the country code (without + or 00).",
+          "Type an optional message that you want users to send to you automatically.",
+          "Click 'Generate WhatsApp Link' to create your custom URL.",
+          "Customize the QR code colors and download it for your marketing materials."
+        ],
+        benefits: [
+          "Make it easy for customers to contact you with a single click.",
+          "Perfect for Instagram bios, Facebook ads, and business cards.",
+          "Generate high-quality QR codes that match your brand colors.",
+          "Pre-filled messages save time for your users and improve conversion."
         ]
       };
     }

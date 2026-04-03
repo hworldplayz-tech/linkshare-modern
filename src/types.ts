@@ -266,5 +266,14 @@ export const TOOLS: Tool[] = [
     icon: 'MessageCircle',
     category: 'Social',
     enabled: true
+  },
+  {
+    id: 'whatsapp-link-generator',
+    title: 'WhatsApp Link Generator + QR Code',
+    slug: 'whatsapp-link-generator',
+    description: 'Create direct WhatsApp chat links with pre-filled messages and custom QR codes.',
+    icon: 'Link',
+    category: 'Social',
+    enabled: true
   }
 ];
