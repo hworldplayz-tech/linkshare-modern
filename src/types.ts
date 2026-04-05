@@ -103,11 +103,11 @@ export interface Tip {
 }
 
 export const DEFAULT_SETTINGS: SiteSettings = {
-  siteTitle: 'LinkShare',
-  siteDescription: 'The largest WhatsApp Group Links Hub. Discover and promote your active WhatsApp groups and channels.',
+  siteTitle: 'LinkShare - WhatsApp Group Links and Tools Hub. Discover tools and promote your active WhatsApp groups and channels. Join thousands of active communities today.',
+  siteDescription: 'The largest WhatsApp Group Links Hub. Discover tools and promote your active WhatsApp groups and channels. Join thousands of active communities today.',
   headerLogoText: 'LinkShare',
-  headerLogoUrl: '',
-  faviconUrl: '',
+  headerLogoUrl: '/favicon.png',
+  faviconUrl: '/favicon.png',
   headerMenus: [
     { id: '1', label: 'Home', href: '/' },
     { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
@@ -117,11 +117,11 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     { id: '4', label: 'Tools', href: '/tools' },
   ],
   heroShow: true,
-  heroTitle: 'Discover and Promote Your WhatsApp Groups',
+  heroTitle: 'Discover Tools and Promote Your WhatsApp Groups',
   heroSubtitle: 'Join thousands of active communities or share your own group with the world. Free, secure, and always updated.',
-  heroTitleSize: 'h1',
-  autoApproveGroups: false,
-  footerAbout: 'The largest WhatsApp Group Links Hub. Discover and promote your active WhatsApp groups and channels. Join thousands of active communities today.',
+  heroTitleSize: 'h2',
+  autoApproveGroups: true,
+  footerAbout: 'The largest WhatsApp Group Links Hub. Discover tools and promote your active WhatsApp groups and channels. Join thousands of active communities today.',
   footerQuickLinks: [
     { id: '1', label: 'Home', href: '/' },
     { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },

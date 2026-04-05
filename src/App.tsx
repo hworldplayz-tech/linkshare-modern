@@ -52,10 +52,27 @@ export default function App() {
         const needsGlobalAdUpdate = data.globalAdsEnabled === undefined;
         const needsPollMenuUpdate = !data.headerMenus?.some(m => m.href === '/iran-vs-israel');
         const needsPollBannerUpdate = data.showPollBanner === undefined;
+        
+        // One-time migration for the new permanent defaults requested by user
+        const needsPermanentUpdate = data.siteTitle === 'LinkShare' || 
+                                   data.heroTitle === 'Discover and Promote Your WhatsApp Groups' ||
+                                   data.heroTitleSize === 'h1' ||
+                                   !data.faviconUrl;
 
-        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate) {
+        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate) {
           const updateData: any = {};
           
+          if (needsPermanentUpdate) {
+            updateData.siteTitle = DEFAULT_SETTINGS.siteTitle;
+            updateData.siteDescription = DEFAULT_SETTINGS.siteDescription;
+            updateData.heroTitle = DEFAULT_SETTINGS.heroTitle;
+            updateData.heroSubtitle = DEFAULT_SETTINGS.heroSubtitle;
+            updateData.heroTitleSize = DEFAULT_SETTINGS.heroTitleSize;
+            updateData.footerAbout = DEFAULT_SETTINGS.footerAbout;
+            updateData.faviconUrl = DEFAULT_SETTINGS.faviconUrl;
+            updateData.headerLogoUrl = DEFAULT_SETTINGS.headerLogoUrl;
+          }
+
           if (needsPollBannerUpdate) {
             updateData.showPollBanner = DEFAULT_SETTINGS.showPollBanner;
             updateData.pollBannerText = DEFAULT_SETTINGS.pollBannerText;

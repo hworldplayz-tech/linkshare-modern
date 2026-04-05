@@ -232,21 +232,19 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
           </div>
           
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className={`${
+            {React.createElement(motion[settings.heroTitleSize || 'h1'], {
+              initial: { opacity: 0, y: 20 },
+              animate: { opacity: 1, y: 0 },
+              transition: { delay: 0.1 },
+              className: `${
                 settings.heroTitleSize === 'h1' ? 'text-5xl md:text-7xl' :
                 settings.heroTitleSize === 'h2' ? 'text-4xl md:text-6xl' :
                 settings.heroTitleSize === 'h3' ? 'text-3xl md:text-5xl' :
                 settings.heroTitleSize === 'h4' ? 'text-2xl md:text-4xl' :
                 settings.heroTitleSize === 'h5' ? 'text-xl md:text-3xl' :
                 'text-lg md:text-2xl'
-              } font-black tracking-tight text-gray-900 mb-6 leading-[1.1]`}
-            >
-              {settings.heroTitle}
-            </motion.h1>
+              } font-black tracking-tight text-gray-900 mb-6 leading-[1.1]`
+            }, settings.heroTitle)}
             
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
