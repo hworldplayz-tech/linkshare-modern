@@ -3,7 +3,8 @@ import {
   Plus, 
   LogIn, 
   AlertCircle,
-  Loader2
+  Loader2,
+  Info
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { 
@@ -25,7 +26,7 @@ interface AddGroupModalProps {
   onClose: () => void;
   user: User | null;
   settings: SiteSettings;
-  onLogin: () => void;
+  onLogin?: () => void;
   authLoading?: boolean;
   authError?: string;
 }
@@ -72,7 +73,6 @@ export const AddGroupModal = ({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) return onLogin();
 
     const formData = new FormData(e.currentTarget);
     const data = {
@@ -83,10 +83,10 @@ export const AddGroupModal = ({
       description: (formData.get('description') as string) || metadata?.description || '',
       imageUrl: metadata?.image || '',
       type: formData.get('type') as 'group' | 'channel',
-      authorUid: user.uid,
-      authorEmail: user.email || '',
-      authorName: (user.email === 'hworldplayz@gmail.com') ? 'Admin' : (user.displayName || 'Anonymous'),
-      status: settings.autoApproveGroups ? 'approved' : 'pending',
+      authorUid: user?.uid || 'anonymous',
+      authorEmail: user?.email || '',
+      authorName: user ? ((user.email === 'hworldplayz@gmail.com') ? 'Admin' : (user.displayName || 'Anonymous')) : 'Anonymous User',
+      status: 'approved',
       isFeatured: false,
       createdAt: serverTimestamp(),
     };
@@ -97,11 +97,14 @@ export const AddGroupModal = ({
 
     try {
       await addDoc(collection(db, 'groups'), data);
-      await updateDoc(doc(db, 'users', user.uid), {
-        groupsCount: increment(1)
-      });
       
-      setFormSuccess(settings.autoApproveGroups ? 'Group published successfully!' : 'Group submitted successfully! It will be visible after approval.');
+      if (user) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          groupsCount: increment(1)
+        });
+      }
+      
+      setFormSuccess('Group published successfully!');
       setTimeout(() => {
         onClose();
         setFormSuccess('');
@@ -122,37 +125,39 @@ export const AddGroupModal = ({
       onClose={onClose} 
       title="Promote Your Group"
     >
-      {!user ? (
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-[#00a884]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <LogIn className="w-8 h-8 text-[#00a884]" />
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {formError && (
+          <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" /> {formError}
           </div>
-          <h4 className="text-xl font-bold mb-2">Sign In Required</h4>
-          <p className="text-gray-500 mb-6">You need to be signed in to submit a group or channel link.</p>
-          {authError && (
-            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {authError}
+        )}
+        {formSuccess && (
+          <div className="p-3 bg-green-50 text-green-600 rounded-xl text-sm flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> {formSuccess}
+          </div>
+        )}
+        
+        {!user && (
+          <div className="p-4 bg-blue-50 text-blue-700 rounded-2xl text-xs flex items-start gap-3 mb-2">
+            <Info className="w-4 h-4 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold mb-1">Submitting as Guest</p>
+              <p>You can submit without signing in. However, signing in with Google allows you to manage your links later.</p>
+              {onLogin && (
+                <button 
+                  type="button" 
+                  onClick={onLogin}
+                  className="mt-2 font-black underline hover:no-underline"
+                >
+                  Sign In Now
+                </button>
+              )}
             </div>
-          )}
-          <Button onClick={onLogin} className="w-full" disabled={authLoading}>
-            {authLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Sign In with Google'}
-          </Button>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {formError && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" /> {formError}
-            </div>
-          )}
-          {formSuccess && (
-            <div className="p-3 bg-green-50 text-green-600 rounded-xl text-sm flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> {formSuccess}
-            </div>
-          )}
-          
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1.5">WhatsApp Link</label>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-1.5">WhatsApp Link</label>
             <div className="relative">
               <input 
                 name="link"
@@ -242,7 +247,6 @@ export const AddGroupModal = ({
             {formLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Submit Link'}
           </Button>
         </form>
-      )}
     </Modal>
   );
 };
