@@ -8,7 +8,14 @@ import {
   QrCode,
   Type,
   Link as LinkIcon,
-  Sparkles
+  Sparkles,
+  Cpu,
+  RefreshCw,
+  Camera,
+  FileEdit,
+  MessageSquare,
+  MessageCircle,
+  Circle
 } from 'lucide-react';
 import { SiteSettings, TOOLS } from '../types';
 import { auth, onAuthStateChanged, googleProvider, signInWithPopup, signOut } from '../firebase';
@@ -27,7 +34,15 @@ const iconMap: Record<string, any> = {
   Search,
   QrCode,
   Type,
-  Link: LinkIcon
+  Link: LinkIcon,
+  Sparkles,
+  Cpu,
+  RefreshCw,
+  Camera,
+  FileEdit,
+  MessageSquare,
+  MessageCircle,
+  Circle
 };
 
 export default function ToolsPage({ settings }: ToolsPageProps) {

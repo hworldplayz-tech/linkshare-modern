@@ -70,7 +70,13 @@ import {
   Phone,
   Video,
   Smile,
-  Paperclip
+  Paperclip,
+  Users,
+  Home,
+  Briefcase,
+  Trophy,
+  Gamepad2,
+  GraduationCap
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -3545,6 +3551,173 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
   const Icon = iconMap[tool.icon] || Wrench;
   const relatedTools = TOOLS.filter(t => t.slug !== tool.slug && t.enabled).slice(0, 3);
 
+// --- WhatsApp Group Name Generator Component ---
+const WhatsAppGroupNameGenerator = () => {
+  const [category, setCategory] = React.useState('Friends');
+  const [generatedNames, setGeneratedNames] = React.useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+
+  const categories = [
+    { id: 'Friends', icon: 'Users', color: 'bg-blue-500' },
+    { id: 'Family', icon: 'Home', color: 'bg-pink-500' },
+    { id: 'Business', icon: 'Briefcase', color: 'bg-gray-800' },
+    { id: 'Tech', icon: 'Cpu', color: 'bg-indigo-500' },
+    { id: 'Funny', icon: 'Smile', color: 'bg-yellow-500' },
+    { id: 'Sports', icon: 'Trophy', color: 'bg-orange-500' },
+    { id: 'Gaming', icon: 'Gamepad2', color: 'bg-purple-500' },
+    { id: 'Education', icon: 'GraduationCap', color: 'bg-green-500' },
+  ];
+
+  const nameData: Record<string, string[]> = {
+    Friends: [
+      'The Three Musketeers', 'Chai & Chitchat', 'The Backbenchers', 'Awesome Blossoms', 'BFFs Forever',
+      'The Squad', 'Circle of Trust', 'No Filter Needed', 'The Dream Team', 'Life is a Party',
+      'Weekend Warriors', 'The Gossip Girls', 'Bros for Life', 'The Inner Circle', 'Crazy Cousins',
+      'The Funky Bunch', 'Besties for Resties', 'The A-Team', 'Soul Sisters', 'The Wolf Pack'
+    ],
+    Family: [
+      'The Family Tree', 'Home Sweet Home', 'The Clan', 'Family Ties', 'Generations',
+      'The Incredibles', 'Modern Family', 'The Godfather Family', 'Family First', 'The Roots',
+      'Kinship Circle', 'The Legacy', 'Blood is Thicker', 'Family Reunion', 'The Tribe',
+      'House of [Name]', 'The Ancestors', 'Family Matters', 'The Heritage', 'Our Little World'
+    ],
+    Business: [
+      'The Boardroom', 'Market Masters', 'Profit Pioneers', 'The Visionaries', 'Startup Squad',
+      'Business Builders', 'The Strategists', 'Growth Hackers', 'The Executives', 'Corporate Kings',
+      'The Innovators', 'Success Stories', 'The Professionals', 'Industry Icons', 'The Network',
+      'Venture Voices', 'The Partners', 'Enterprise Elite', 'The Consultants', 'Market Movers'
+    ],
+    Tech: [
+      'The Code Breakers', 'Digital Nomads', 'Tech Titans', 'The Algorithm', 'Future Tech',
+      'The Developers', 'Binary Bros', 'Cloud Chasers', 'The Engineers', 'Tech Talk',
+      'The Silicon Valley', 'Cyber Squad', 'The IT Crowd', 'Data Driven', 'The Hardware Hub',
+      'Software Savvy', 'The Gadget Gurus', 'AI Avengers', 'The Web Wizards', 'Tech Trends'
+    ],
+    Funny: [
+      'The Un-Stoppables', 'Wats-Appening', 'The Chatty Cathys', 'Error 404: Brain Not Found', 'The Meme Team',
+      'Sarcasm Society', 'The Pun-ishers', 'Laughter Therapy', 'The Jokers', 'Funny Bones',
+      'The Comedy Club', 'Laugh Out Loud', 'The Pranksters', 'Humor Hub', 'The Witty Ones',
+      'Giggle Gang', 'The Snarky Squad', 'Hilarious Humans', 'The Chuckle Crew', 'Wit & Wisdom'
+    ],
+    Sports: [
+      'The Game Changers', 'Victory Voices', 'The Champions', 'Sports Central', 'The Athletes',
+      'Team Spirit', 'The Goal Getters', 'Sports Savvy', 'The All-Stars', 'Game On',
+      'The Playmakers', 'Sports Stars', 'The Competitors', 'Victory Lap', 'The Fanatics',
+      'Sports Sphere', 'The Winners Circle', 'Team Talk', 'The Sports Hub', 'Field of Dreams'
+    ],
+    Gaming: [
+      'The Level Up', 'Game Over', 'The Pro Gamers', 'Gaming Galaxy', 'The Controllers',
+      'Pixel Pioneers', 'The Quest', 'Gaming Gurus', 'The Streamers', 'Game Night',
+      'The Esports Elite', 'Gaming Guild', 'The Joysticks', 'Game Glory', 'The Virtual World',
+      'Gaming Gang', 'The Boss Level', 'Game On!', 'The Gaming Hub', 'Legendary Loot'
+    ],
+    Education: [
+      'The Scholars', 'Knowledge Keepers', 'The Learners', 'Study Squad', 'The Intellectuals',
+      'Education Elite', 'The Researchers', 'Smart Minds', 'The Academics', 'Learning Lab',
+      'The Thinkers', 'Knowledge Network', 'The Students', 'Wisdom Warriors', 'The Library',
+      'Classroom Chronicles', 'The Educators', 'Brainy Bunch', 'The Mentors', 'Future Leaders'
+    ]
+  };
+
+  const generateNames = () => {
+    setIsGenerating(true);
+    setGeneratedNames([]);
+    
+    setTimeout(() => {
+      const allNames = nameData[category] || [];
+      const shuffled = [...allNames].sort(() => 0.5 - Math.random());
+      setGeneratedNames(shuffled.slice(0, 10));
+      setIsGenerating(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="space-y-10">
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-12 shadow-sm">
+        <div className="max-w-3xl mx-auto space-y-10">
+          <div className="text-center space-y-4">
+            <h3 className="text-2xl font-black text-gray-900">Choose a Category</h3>
+            <p className="text-gray-500">Select the type of group you're creating to get relevant name suggestions.</p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setCategory(cat.id)}
+                className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 group ${
+                  category === cat.id 
+                    ? 'border-[#00a884] bg-[#00a884]/5 shadow-lg shadow-[#00a884]/10' 
+                    : 'border-gray-100 hover:border-gray-200 bg-white'
+                }`}
+              >
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110 ${cat.color}`}>
+                  {cat.id === 'Friends' && <Users className="w-6 h-6" />}
+                  {cat.id === 'Family' && <Home className="w-6 h-6" />}
+                  {cat.id === 'Business' && <Briefcase className="w-6 h-6" />}
+                  {cat.id === 'Tech' && <Cpu className="w-6 h-6" />}
+                  {cat.id === 'Funny' && <Smile className="w-6 h-6" />}
+                  {cat.id === 'Sports' && <Trophy className="w-6 h-6" />}
+                  {cat.id === 'Gaming' && <Gamepad2 className="w-6 h-6" />}
+                  {cat.id === 'Education' && <GraduationCap className="w-6 h-6" />}
+                </div>
+                <span className={`font-bold text-sm ${category === cat.id ? 'text-[#00a884]' : 'text-gray-600'}`}>
+                  {cat.id}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex justify-center pt-4">
+            <Button 
+              onClick={generateNames}
+              disabled={isGenerating}
+              className="bg-[#00a884] text-white hover:bg-[#008f6f] px-12 py-5 font-black rounded-2xl shadow-xl shadow-[#00a884]/20 text-lg h-auto"
+            >
+              {isGenerating ? (
+                <><Loader2 className="w-6 h-6 mr-2 animate-spin" /> Generating...</>
+              ) : (
+                <><Sparkles className="w-6 h-6 mr-2" /> Generate Names</>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {generatedNames.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            {generatedNames.map((name, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#00a884]/30 hover:shadow-md transition-all"
+              >
+                <span className="font-bold text-gray-800 text-lg">{name}</span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(name);
+                    alert(`Copied "${name}" to clipboard!`);
+                  }}
+                  className="p-3 bg-gray-50 text-gray-400 hover:bg-[#00a884] hover:text-white rounded-xl transition-all"
+                >
+                  <Copy className="w-5 h-5" />
+                </button>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
   const renderTool = () => {
     switch (tool.slug) {
       case 'plagiarism-checker': return <PlagiarismChecker />;
@@ -3560,6 +3733,7 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
       case 'whatsapp-dp-border': return <WhatsAppDPBorderMaker />;
       case 'qr-code-scanner': return <QRCodeScanner />;
       case 'pdf-editor': return <PDFEditor />;
+      case 'whatsapp-group-name-generator': return <WhatsAppGroupNameGenerator />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -3788,6 +3962,22 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
           "Add text, images, and annotations to your documents for free.",
           "High-quality rendering and export for professional results.",
           "Privacy-focused: Your files never leave your browser."
+        ]
+      };
+    }
+    if (tool.slug === 'whatsapp-group-name-generator') {
+      return {
+        howToUse: [
+          "Choose a category that best fits your group's purpose (e.g., Friends, Family, Business).",
+          "Click the 'Generate Names' button to get a list of creative suggestions.",
+          "Browse through the generated names and find one you like.",
+          "Click the copy icon next to any name to copy it to your clipboard instantly."
+        ],
+        benefits: [
+          "Save time thinking of creative and catchy names for your groups.",
+          "Get relevant suggestions based on specific categories.",
+          "Discover unique and funny names that stand out in chat lists.",
+          "Completely free to use with unlimited generations."
         ]
       };
     }

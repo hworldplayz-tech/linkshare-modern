@@ -284,5 +284,14 @@ export const TOOLS: Tool[] = [
     icon: 'Circle',
     category: 'Social',
     enabled: true
+  },
+  {
+    id: 'whatsapp-group-name-generator',
+    title: 'WhatsApp Group Name Generator',
+    slug: 'whatsapp-group-name-generator',
+    description: 'Generate creative, funny, and professional names for your WhatsApp groups based on categories.',
+    icon: 'Type',
+    category: 'Social',
+    enabled: true
   }
 ];
