@@ -80,7 +80,10 @@ import {
   Bold,
   Italic,
   Strikethrough,
-  Code
+  Code,
+  ListMusic,
+  Play,
+  Filter
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -3557,6 +3560,320 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
 
 // --- WhatsApp Group Name Generator Component ---
 // --- WhatsApp Status Formatter Component ---
+// --- M3U Playlist Viewer Component ---
+const M3UPlaylistViewer = () => {
+  const [url, setUrl] = React.useState('');
+  const [channels, setChannels] = React.useState<any[]>([]);
+  const [filteredChannels, setFilteredChannels] = React.useState<any[]>([]);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [progress, setProgress] = React.useState(0);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [sortOrder, setSortOrder] = React.useState('default');
+  const [countryFilter, setCountryFilter] = React.useState('');
+  const [groupFilter, setGroupFilter] = React.useState('');
+  const [countries, setCountries] = React.useState<string[]>([]);
+  const [groups, setGroups] = React.useState<string[]>([]);
+  const [displayLimit, setDisplayLimit] = React.useState(500);
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const processM3U = (content: string) => {
+    const lines = content.split(/\r?\n/);
+    let count = 0;
+    const allChannels: any[] = [];
+    const foundCountries = new Set<string>();
+    const foundGroups = new Set<string>();
+
+    const chunkSize = 500;
+    let currentLine = 0;
+
+    const processChunk = () => {
+      const startTime = performance.now();
+      while (currentLine < lines.length && performance.now() - startTime < 50) {
+        if (lines[currentLine].startsWith('#EXTINF')) {
+          if (currentLine + 1 < lines.length && !lines[currentLine + 1].startsWith('#')) {
+            const extinf = lines[currentLine];
+            const channelUrl = lines[currentLine + 1];
+
+            let name = 'Unknown';
+            let logo = '';
+            let group = '';
+            let country = '';
+
+            const tvgNameMatch = extinf.match(/tvg-name="([^"]*)"/);
+            const tvgLogoMatch = extinf.match(/tvg-logo="([^"]*)"/);
+            const groupMatch = extinf.match(/group-title="([^"]*)"/);
+            const nameMatch = extinf.match(/,(.+)$/);
+            const countryMatch = extinf.match(/tvg-country="([^"]*)"/);
+
+            if (tvgNameMatch) name = tvgNameMatch[1] || 'Unknown';
+            if (tvgLogoMatch) logo = tvgLogoMatch[1] || '';
+            if (groupMatch) group = groupMatch[1] || '';
+            if (countryMatch) country = countryMatch[1] || '';
+            if (nameMatch && nameMatch[1].trim() && name === 'Unknown') name = nameMatch[1].trim();
+
+            if (country) foundCountries.add(country);
+            if (group) foundGroups.add(group);
+
+            allChannels.push({ name, logo, group, country, extinf, url: channelUrl });
+            count++;
+            currentLine++;
+          }
+        }
+        currentLine++;
+      }
+
+      const newProgress = Math.min(100, Math.round((currentLine / lines.length) * 100));
+      setProgress(newProgress);
+
+      if (currentLine < lines.length) {
+        requestAnimationFrame(processChunk);
+      } else {
+        setChannels(allChannels);
+        setFilteredChannels(allChannels);
+        setCountries(Array.from(foundCountries).sort());
+        setGroups(Array.from(foundGroups).sort());
+        setIsProcessing(false);
+      }
+    };
+
+    processChunk();
+  };
+
+  const handlePlaylist = async () => {
+    if (!url && !fileInputRef.current?.files?.[0]) {
+      alert('Please enter a URL or upload a file');
+      return;
+    }
+
+    setIsProcessing(true);
+    setProgress(0);
+    setChannels([]);
+    setFilteredChannels([]);
+
+    try {
+      let content = '';
+      if (url) {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+        content = await response.text();
+      } else if (fileInputRef.current?.files?.[0]) {
+        content = await fileInputRef.current.files[0].text();
+      }
+      processM3U(content);
+    } catch (error: any) {
+      alert(`Error: ${error.message}`);
+      setIsProcessing(false);
+    }
+  };
+
+  React.useEffect(() => {
+    let result = [...channels];
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(c => 
+        c.name.toLowerCase().includes(term) || 
+        c.group.toLowerCase().includes(term) || 
+        c.country.toLowerCase().includes(term)
+      );
+    }
+
+    if (countryFilter) {
+      result = result.filter(c => c.country === countryFilter);
+    }
+
+    if (groupFilter) {
+      result = result.filter(c => c.group === groupFilter);
+    }
+
+    if (sortOrder === 'nameAsc') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortOrder === 'nameDesc') {
+      result.sort((a, b) => b.name.localeCompare(a.name));
+    }
+
+    setFilteredChannels(result);
+    setDisplayLimit(500);
+  }, [searchTerm, sortOrder, countryFilter, groupFilter, channels]);
+
+  const copyAll = () => {
+    const content = "#EXTM3U\n" + channels.map(c => `${c.extinf}\n${c.url}`).join('\n');
+    navigator.clipboard.writeText(content);
+    alert('Full playlist copied!');
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-12 shadow-sm">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="space-y-4">
+            <label className="block text-sm font-bold text-gray-700">M3U/M3U8 URL</label>
+            <input 
+              type="url" 
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Paste your M3U or M3U8 URL here..."
+              className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all"
+            />
+            <div className="text-xs text-gray-400">
+              Example: <button onClick={() => setUrl('https://iptv-org.github.io/iptv/index.m3u')} className="text-[#00a884] hover:underline">https://iptv-org.github.io/iptv/index.m3u</button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="h-px bg-gray-100 flex-1" />
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">OR</span>
+            <div className="h-px bg-gray-100 flex-1" />
+          </div>
+
+          <div className="space-y-4">
+            <label className="block text-sm font-bold text-gray-700">Upload M3U File</label>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              accept=".m3u,.m3u8"
+              className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all"
+            />
+          </div>
+
+          <Button 
+            onClick={handlePlaylist}
+            disabled={isProcessing}
+            className="w-full bg-[#00a884] text-white hover:bg-[#008f6f] py-6 font-black rounded-2xl shadow-xl shadow-[#00a884]/20 text-lg"
+          >
+            {isProcessing ? (
+              <><Loader2 className="w-6 h-6 mr-2 animate-spin" /> Processing {progress}%...</>
+            ) : (
+              <><Search className="w-6 h-6 mr-2" /> Analyze Playlist</>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {channels.length > 0 && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="px-4 py-2 bg-[#00a884]/10 rounded-xl">
+                <span className="text-[#00a884] font-black">{filteredChannels.length}</span>
+                <span className="text-gray-400 text-xs ml-2 uppercase font-bold">Channels Found</span>
+              </div>
+              <button onClick={copyAll} className="text-sm font-bold text-gray-500 hover:text-[#00a884] flex items-center gap-2">
+                <Copy className="w-4 h-4" /> Copy All
+              </button>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input 
+                  type="text"
+                  placeholder="Search channels..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00a884]/30 outline-none text-sm transition-all"
+                />
+              </div>
+              <select 
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00a884]/30 outline-none text-sm transition-all"
+              >
+                <option value="default">Default Order</option>
+                <option value="nameAsc">Name (A-Z)</option>
+                <option value="nameDesc">Name (Z-A)</option>
+              </select>
+              <select 
+                value={countryFilter}
+                onChange={(e) => setCountryFilter(e.target.value)}
+                className="px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00a884]/30 outline-none text-sm transition-all"
+              >
+                <option value="">All Countries</option>
+                {countries.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <select 
+                value={groupFilter}
+                onChange={(e) => setGroupFilter(e.target.value)}
+                className="px-4 py-2 bg-gray-50 border border-transparent rounded-xl focus:bg-white focus:border-[#00a884]/30 outline-none text-sm transition-all"
+              >
+                <option value="">All Groups</option>
+                {groups.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredChannels.slice(0, displayLimit).map((channel, idx) => (
+              <div key={idx} className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm hover:shadow-md transition-all group">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-gray-100">
+                    {channel.logo ? (
+                      <img src={channel.logo} alt="" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    ) : (
+                      <Play className="w-6 h-6 text-gray-200" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-900 truncate">{channel.name}</h4>
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {channel.group && <span className="text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md uppercase">{channel.group}</span>}
+                      {channel.country && <span className="text-[10px] font-bold px-2 py-0.5 bg-orange-50 text-orange-600 rounded-md uppercase">{channel.country}</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10px] font-mono text-gray-400 break-all mb-4 line-clamp-1">
+                  {channel.url}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${channel.extinf}\n${channel.url}`);
+                      alert('Channel info copied!');
+                    }}
+                    className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-xs font-bold text-gray-600 transition-all"
+                  >
+                    Copy Info
+                  </button>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(channel.url);
+                      alert('URL copied!');
+                    }}
+                    className="flex-1 py-2 bg-gray-50 hover:bg-gray-100 rounded-xl text-xs font-bold text-gray-600 transition-all"
+                  >
+                    Copy URL
+                  </button>
+                  <a 
+                    href={channel.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="p-2 bg-[#00a884]/10 text-[#00a884] rounded-xl hover:bg-[#00a884] hover:text-white transition-all"
+                  >
+                    <Play className="w-4 h-4" />
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredChannels.length > displayLimit && (
+            <div className="text-center pt-8">
+              <Button 
+                variant="outline"
+                onClick={() => setDisplayLimit(prev => prev + 500)}
+                className="px-12 py-4 rounded-2xl font-bold"
+              >
+                Load More Channels
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const WhatsAppStatusFormatter = () => {
   const [text, setText] = React.useState('');
   const [activeTab, setActiveTab] = React.useState<'native' | 'stylish'>('native');
@@ -3911,6 +4228,7 @@ const WhatsAppGroupNameGenerator = () => {
       case 'pdf-editor': return <PDFEditor />;
       case 'whatsapp-group-name-generator': return <WhatsAppGroupNameGenerator />;
       case 'whatsapp-status-formatter': return <WhatsAppStatusFormatter />;
+      case 'm3u-playlist-viewer': return <M3UPlaylistViewer />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -4171,6 +4489,22 @@ const WhatsAppGroupNameGenerator = () => {
           "Easily apply WhatsApp's native formatting without remembering the codes.",
           "Access a variety of stylish fonts that work across most devices.",
           "Quick and easy one-click copy functionality."
+        ]
+      };
+    }
+    if (tool.slug === 'm3u-playlist-viewer') {
+      return {
+        howToUse: [
+          "Paste a URL to an M3U/M3U8 file or upload a local file from your device.",
+          "Click 'Analyze Playlist' to process the file and extract all channels.",
+          "Use the search box and filters (Country, Group) to find specific channels.",
+          "Test streams directly or copy channel information for your player."
+        ],
+        benefits: [
+          "Fast processing of large playlists with thousands of channels.",
+          "Advanced filtering by name, country, and group category.",
+          "100% client-side processing for maximum privacy.",
+          "Easy one-click testing and copying of stream links."
         ]
       };
     }

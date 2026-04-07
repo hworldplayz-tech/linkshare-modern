@@ -302,5 +302,14 @@ export const TOOLS: Tool[] = [
     icon: 'Type',
     category: 'Social',
     enabled: true
+  },
+  {
+    id: 'm3u-playlist-viewer',
+    title: 'M3U Playlist Viewer & Reader',
+    slug: 'm3u-playlist-viewer',
+    description: 'Analyze, filter and extract channels from M3U/M3U8 playlists. Find channels by country, group, or name.',
+    icon: 'ListMusic',
+    category: 'Utility',
+    enabled: true
   }
 ];
