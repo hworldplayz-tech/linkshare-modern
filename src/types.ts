@@ -293,5 +293,14 @@ export const TOOLS: Tool[] = [
     icon: 'Type',
     category: 'Social',
     enabled: true
+  },
+  {
+    id: 'whatsapp-status-formatter',
+    title: 'WhatsApp Status Text Formatter',
+    slug: 'whatsapp-status-formatter',
+    description: 'Format your WhatsApp status with bold, italic, strikethrough, and stylish fonts.',
+    icon: 'Type',
+    category: 'Social',
+    enabled: true
   }
 ];

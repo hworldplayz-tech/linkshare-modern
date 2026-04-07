@@ -76,7 +76,11 @@ import {
   Briefcase,
   Trophy,
   Gamepad2,
-  GraduationCap
+  GraduationCap,
+  Bold,
+  Italic,
+  Strikethrough,
+  Code
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
@@ -3552,6 +3556,178 @@ export default function ToolDetail({ settings }: ToolDetailProps) {
   const relatedTools = TOOLS.filter(t => t.slug !== tool.slug && t.enabled).slice(0, 3);
 
 // --- WhatsApp Group Name Generator Component ---
+// --- WhatsApp Status Formatter Component ---
+const WhatsAppStatusFormatter = () => {
+  const [text, setText] = React.useState('');
+  const [activeTab, setActiveTab] = React.useState<'native' | 'stylish'>('native');
+
+  const applyFormat = (prefix: string, suffix: string) => {
+    const textarea = document.getElementById('status-input') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = text.substring(start, end);
+    
+    if (selectedText) {
+      const newText = text.substring(0, start) + prefix + selectedText + suffix + text.substring(end);
+      setText(newText);
+    } else {
+      setText(text + prefix + suffix);
+    }
+  };
+
+  const stylishFonts = (str: string) => {
+    if (!str) return [];
+    
+    const maps: Record<string, Record<string, string>> = {
+      bold: {
+        a: '𝐚', b: '𝐛', c: '𝐜', d: '𝐝', e: '𝐞', f: '𝐟', g: '𝐠', h: '𝐡', i: '𝐢', j: '𝐣', k: '𝐤', l: '𝐥', m: '𝐦', n: '𝐧', o: '𝐨', p: '𝐩', q: '𝐪', r: '𝐫', s: '𝐬', t: '𝐭', u: '𝐮', v: '𝐯', w: '𝐰', x: '𝐱', y: '𝐲', z: '𝐳',
+        A: '𝐀', B: '𝐁', C: '𝐂', D: '𝐃', E: '𝐄', F: '𝐅', G: '𝐆', H: '𝐇', I: '𝐈', J: '𝐉', K: '𝐊', L: '𝐋', M: '𝐌', N: '𝐍', O: '𝐎', P: '𝐏', Q: '𝐐', R: '𝐑', S: '𝐒', T: '𝐓', U: '𝐔', V: '𝐕', W: '𝐖', X: '𝐗', Y: '𝐘', Z: '𝐙',
+        '0': '𝟎', '1': '𝟏', '2': '𝟐', '3': '𝟑', '4': '𝟒', '5': '𝟓', '6': '𝟔', '7': '𝟕', '8': '𝟖', '9': '𝟗'
+      },
+      italic: {
+        a: '𝑎', b: '𝑏', c: '𝑐', d: '𝑑', e: '𝑒', f: '𝑓', g: '𝑔', h: 'ℎ', i: '𝑖', j: '𝑗', k: '𝑘', l: '𝑙', m: '𝑚', n: '𝑛', o: '𝑜', p: '𝑝', q: '𝑞', r: '𝑟', s: '𝑠', t: '𝑡', u: '𝑢', v: '𝑣', w: '𝑤', x: '𝑥', y: '𝑦', z: '𝑧',
+        A: '𝐴', B: '𝐵', C: '𝐶', D: '𝐷', E: '𝐸', F: '𝐹', G: '𝐺', H: '𝐻', I: '𝐼', J: '𝐽', K: '𝐾', L: '𝐿', M: '𝑀', N: '𝑁', O: '𝑂', P: '𝑃', Q: '𝑄', R: '𝑅', S: '𝑆', T: '𝑇', U: '𝑈', V: '𝑉', W: '𝑊', X: '𝑋', Y: '𝑌', Z: '𝑍'
+      },
+      mono: {
+        a: '𝚊', b: '𝚋', c: '𝚌', d: '𝚍', e: '𝚎', f: '𝚏', g: '𝚐', h: '𝚑', i: '𝚒', j: '𝚓', k: '𝚔', l: '𝚕', m: '𝚖', n: '𝚗', o: '𝚘', p: '𝚙', q: '𝚚', r: '𝚛', s: '𝚜', t: '𝚝', u: '𝚞', v: '𝚟', w: '𝚠', x: '𝚡', y: '𝚢', z: '𝚣',
+        A: '𝙰', B: '𝙱', C: '𝙲', D: '𝙳', E: '𝙴', F: '𝙵', G: '𝙶', H: '𝙷', I: '𝙸', J: '𝙹', K: '𝙺', L: '𝙻', M: '𝙼', N: '𝙽', O: '𝙾', P: '𝙿', Q: '𝚀', R: '𝚁', S: '𝚂', T: '𝚃', U: '𝚄', V: '𝚅', W: '𝚆', X: '𝚇', Y: '𝚈', Z: '𝚉',
+        '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿'
+      },
+      script: {
+        a: '𝒶', b: '𝒷', c: '𝒸', d: '𝒹', e: '𝑒', f: '𝒻', g: '𝑔', h: '𝒽', i: '𝒾', j: '𝒿', k: '𝓀', l: '𝓁', m: '𝓂', n: '𝓃', o: '𝑜', p: '𝓅', q: '𝓆', r: '𝓇', s: '𝓈', t: '𝓉', u: '𝓊', v: '𝓋', w: '𝓌', x: '𝓍', y: '𝓎', z: '𝓏',
+        A: '𝒜', B: 'ℬ', C: '𝒞', D: '𝒟', E: 'ℰ', F: 'ℱ', G: '𝒢', H: 'ℋ', I: 'ℐ', J: '𝒥', K: '𝒦', L: 'ℒ', M: 'ℳ', N: '𝒩', O: '𝒪', P: '𝒫', Q: '𝒬', R: 'ℛ', S: '𝒮', T: '𝒯', U: '𝒰', V: '𝒱', W: '𝒲', X: '𝒳', Y: '𝒴', Z: '𝒵'
+      },
+      bubble: {
+        a: 'ⓐ', b: 'ⓑ', c: 'ⓒ', d: 'ⓓ', e: 'ⓔ', f: 'ⓕ', g: 'ⓖ', h: 'ⓗ', i: 'ⓘ', j: 'ⓙ', k: 'ⓚ', l: 'ⓛ', m: 'ⓜ', n: 'ⓝ', o: 'ⓞ', p: 'ⓟ', q: 'ⓠ', r: 'ⓡ', s: 'ⓢ', t: 'ⓣ', u: 'ⓤ', v: 'ⓥ', w: 'ⓦ', x: 'ⓧ', y: 'ⓨ', z: 'ⓩ',
+        A: 'Ⓐ', B: 'Ⓑ', C: 'Ⓒ', D: 'Ⓓ', E: 'Ⓔ', F: 'Ⓕ', G: 'Ⓖ', H: 'Ⓗ', I: 'Ⓘ', J: 'Ⓙ', K: 'Ⓚ', L: 'Ⓛ', M: 'Ⓜ', N: 'Ⓝ', O: 'Ⓞ', P: 'Ⓟ', Q: 'Ⓠ', R: 'Ⓡ', S: 'Ⓢ', T: 'Ⓣ', U: 'Ⓤ', V: 'Ⓥ', W: 'Ⓦ', X: 'Ⓧ', Y: 'Ⓨ', Z: 'Ⓩ',
+        '0': '⓪', '1': '①', '2': '②', '3': '③', '4': '④', '5': '⑤', '6': '⑥', '7': '⑦', '8': '⑧', '9': '⑨'
+      }
+    };
+
+    const transform = (text: string, map: Record<string, string>) => {
+      return text.split('').map(char => map[char] || char).join('');
+    };
+
+    return [
+      { name: 'Bold', text: transform(str, maps.bold) },
+      { name: 'Italic', text: transform(str, maps.italic) },
+      { name: 'Monospace', text: transform(str, maps.mono) },
+      { name: 'Script', text: transform(str, maps.script) },
+      { name: 'Bubble', text: transform(str, maps.bubble) },
+    ];
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-[2rem] border border-gray-100 p-2 shadow-sm inline-flex mb-4">
+        <button 
+          onClick={() => setActiveTab('native')}
+          className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all ${activeTab === 'native' ? 'bg-[#00a884] text-white shadow-lg shadow-[#00a884]/20' : 'text-gray-500 hover:bg-gray-50'}`}
+        >
+          Native Formatting
+        </button>
+        <button 
+          onClick={() => setActiveTab('stylish')}
+          className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all ${activeTab === 'stylish' ? 'bg-[#00a884] text-white shadow-lg shadow-[#00a884]/20' : 'text-gray-500 hover:bg-gray-50'}`}
+        >
+          Stylish Fonts
+        </button>
+      </div>
+
+      <div className="bg-white rounded-[2rem] border border-gray-100 p-6 md:p-8 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-black text-gray-900">Input Text</h3>
+          <button onClick={() => setText('')} className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
+
+        <textarea 
+          id="status-input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Type your WhatsApp status here..."
+          className="w-full h-40 p-6 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all resize-none text-gray-700 leading-relaxed"
+        />
+
+        {activeTab === 'native' && (
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button 
+              onClick={() => applyFormat('*', '*')}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-all"
+            >
+              <Bold className="w-4 h-4" /> Bold
+            </button>
+            <button 
+              onClick={() => applyFormat('_', '_')}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-all"
+            >
+              <Italic className="w-4 h-4" /> Italic
+            </button>
+            <button 
+              onClick={() => applyFormat('~', '~')}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-all"
+            >
+              <Strikethrough className="w-4 h-4" /> Strikethrough
+            </button>
+            <button 
+              onClick={() => applyFormat('```', '```')}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-all"
+            >
+              <Code className="w-4 h-4" /> Monospace
+            </button>
+          </div>
+        )}
+      </div>
+
+      {activeTab === 'native' ? (
+        <div className="bg-[#e1ffc7] rounded-[2rem] border border-[#00a884]/20 p-8 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-black text-[#075e54]">Preview & Copy</h3>
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText(text);
+                alert('Copied to clipboard!');
+              }}
+              className="flex items-center gap-2 text-[#00a884] font-bold"
+            >
+              <Copy className="w-5 h-5" /> Copy Formatted Text
+            </button>
+          </div>
+          <div className="p-6 bg-white/50 rounded-2xl text-gray-700 whitespace-pre-wrap font-medium">
+            {text || "Your formatted text will appear here..."}
+          </div>
+          <p className="mt-4 text-xs text-[#075e54]/60 font-bold uppercase tracking-widest">
+            Note: WhatsApp will render the formatting (bold, etc.) after you paste and send the message.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {stylishFonts(text).map((font, idx) => (
+            <div key={idx} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#00a884]/30 transition-all">
+              <div className="flex-1">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">{font.name}</span>
+                <span className="font-bold text-gray-800 text-lg">{font.text || "Preview"}</span>
+              </div>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(font.text);
+                  alert(`Copied ${font.name} style!`);
+                }}
+                className="p-3 bg-gray-50 text-gray-400 hover:bg-[#00a884] hover:text-white rounded-xl transition-all"
+              >
+                <Copy className="w-5 h-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const WhatsAppGroupNameGenerator = () => {
   const [category, setCategory] = React.useState('Friends');
   const [generatedNames, setGeneratedNames] = React.useState<string[]>([]);
@@ -3734,6 +3910,7 @@ const WhatsAppGroupNameGenerator = () => {
       case 'qr-code-scanner': return <QRCodeScanner />;
       case 'pdf-editor': return <PDFEditor />;
       case 'whatsapp-group-name-generator': return <WhatsAppGroupNameGenerator />;
+      case 'whatsapp-status-formatter': return <WhatsAppStatusFormatter />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -3978,6 +4155,22 @@ const WhatsAppGroupNameGenerator = () => {
           "Get relevant suggestions based on specific categories.",
           "Discover unique and funny names that stand out in chat lists.",
           "Completely free to use with unlimited generations."
+        ]
+      };
+    }
+    if (tool.slug === 'whatsapp-status-formatter') {
+      return {
+        howToUse: [
+          "Type or paste your status text into the input field.",
+          "Use the 'Native Formatting' tab to apply bold, italic, or strikethrough (using WhatsApp's special characters).",
+          "Switch to 'Stylish Fonts' to convert your text into cool unicode styles like Bubble or Script.",
+          "Click the copy button to copy your formatted text and paste it into your WhatsApp status."
+        ],
+        benefits: [
+          "Make your WhatsApp status stand out with unique formatting.",
+          "Easily apply WhatsApp's native formatting without remembering the codes.",
+          "Access a variety of stylish fonts that work across most devices.",
+          "Quick and easy one-click copy functionality."
         ]
       };
     }
