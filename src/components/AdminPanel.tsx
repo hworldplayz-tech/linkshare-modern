@@ -115,6 +115,7 @@ export default function AdminPanel() {
   const [iranFlagUrl, setIranFlagUrl] = useState('');
   const [israelFlagUrl, setIsraelFlagUrl] = useState('');
   const [useFakeVotes, setUseFakeVotes] = useState(false);
+  const [showCountries, setShowCountries] = useState(true);
   const [editingPollCountry, setEditingPollCountry] = useState<any>(null);
 
   const [newCategory, setNewCategory] = useState('');
@@ -193,6 +194,7 @@ export default function AdminPanel() {
         setIranFlagUrl(data.iranFlagUrl || '');
         setIsraelFlagUrl(data.israelFlagUrl || '');
         setUseFakeVotes(data.useFakeVotes || false);
+        setShowCountries(data.showCountries !== false);
       }
     });
 
@@ -487,6 +489,7 @@ export default function AdminPanel() {
         iranFlagUrl: iranFlagUrl,
         israelFlagUrl: israelFlagUrl,
         useFakeVotes: useFakeVotes,
+        showCountries: showCountries,
         lastUpdated: Timestamp.now()
       });
       // Also save site settings for the banner
@@ -700,6 +703,24 @@ export default function AdminPanel() {
                     className={`w-16 h-8 rounded-full transition-all relative ${useFakeVotes ? 'bg-[#00a884]' : 'bg-gray-300'}`}
                   >
                     <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${useFakeVotes ? 'left-9' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${showCountries ? 'bg-[#00a884] shadow-[#00a884]/20' : 'bg-gray-300 shadow-gray-200'}`}>
+                      <Globe className="text-white w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-900">Show Top Voting Countries</h3>
+                      <p className="text-sm text-gray-500">Display the list of countries with their vote distribution.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowCountries(!showCountries)}
+                    className={`w-16 h-8 rounded-full transition-all relative ${showCountries ? 'bg-[#00a884]' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${showCountries ? 'left-9' : 'left-1'}`} />
                   </button>
                 </div>
 

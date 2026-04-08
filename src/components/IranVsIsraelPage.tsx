@@ -36,6 +36,7 @@ interface PollData {
   iranFlagUrl?: string;
   israelFlagUrl?: string;
   useFakeVotes: boolean;
+  showCountries?: boolean;
   lastUpdated: any;
 }
 
@@ -325,90 +326,92 @@ export const IranVsIsraelPage = () => {
         </div>
 
         {/* Top Countries Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-gray-100 h-full">
-              <div className="flex items-center gap-3 mb-8">
-                <Globe className="w-8 h-8 text-blue-600" />
-                <h3 className="text-2xl font-black text-gray-900">Top Voting Countries</h3>
+        {poll.showCountries !== false && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl border border-gray-100 h-full">
+                <div className="flex items-center gap-3 mb-8">
+                  <Globe className="w-8 h-8 text-blue-600" />
+                  <h3 className="text-2xl font-black text-gray-900">Top Voting Countries</h3>
+                </div>
+                <div className="space-y-6">
+                  {countryVotes.length > 0 ? (
+                    countryVotes.map((country, idx) => {
+                      const total = country.votesIran + country.votesIsrael;
+                      const iranP = total > 0 ? Math.round((country.votesIran / total) * 100) : 50;
+                      const israelP = 100 - iranP;
+                      return (
+                        <div key={country.countryCode} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-black text-gray-400 w-6">#{idx + 1}</span>
+                              <img 
+                                src={country.flagUrl || (country.countryCode ? `https://flagcdn.com/w40/${country.countryCode.toLowerCase()}.png` : "https://flagcdn.com/w40/un.png")} 
+                                alt={country.countryName}
+                                className="w-6 h-4 object-cover rounded-sm bg-gray-100"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "https://flagcdn.com/w40/un.png";
+                                }}
+                              />
+                              <span className="font-bold text-gray-900">{country.countryName}</span>
+                            </div>
+                            <div className="text-xs font-black text-gray-500 uppercase tracking-widest">
+                              {total.toLocaleString()} Total
+                            </div>
+                          </div>
+                          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden flex">
+                            <div className="h-full bg-blue-600" style={{ width: `${israelP}%` }} />
+                            <div className="h-full bg-green-600" style={{ width: `${iranP}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-12 text-gray-400 font-bold">
+                      Waiting for more global data...
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="space-y-6">
-                {countryVotes.length > 0 ? (
-                  countryVotes.map((country, idx) => {
-                    const total = country.votesIran + country.votesIsrael;
-                    const iranP = total > 0 ? Math.round((country.votesIran / total) * 100) : 50;
-                    const israelP = 100 - iranP;
-                    return (
-                      <div key={country.countryCode} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs font-black text-gray-400 w-6">#{idx + 1}</span>
-                            <img 
-                              src={country.flagUrl || (country.countryCode ? `https://flagcdn.com/w40/${country.countryCode.toLowerCase()}.png` : "https://flagcdn.com/w40/un.png")} 
-                              alt={country.countryName}
-                              className="w-6 h-4 object-cover rounded-sm bg-gray-100"
-                              referrerPolicy="no-referrer"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://flagcdn.com/w40/un.png";
-                              }}
-                            />
-                            <span className="font-bold text-gray-900">{country.countryName}</span>
-                          </div>
-                          <div className="text-xs font-black text-gray-500 uppercase tracking-widest">
-                            {total.toLocaleString()} Total
-                          </div>
-                        </div>
-                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden flex">
-                          <div className="h-full bg-blue-600" style={{ width: `${israelP}%` }} />
-                          <div className="h-full bg-green-600" style={{ width: `${iranP}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center py-12 text-gray-400 font-bold">
-                    Waiting for more global data...
+            </div>
+
+            <div className="space-y-8">
+              <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] p-8 text-white shadow-xl">
+                <TrendingUp className="w-10 h-10 mb-6 opacity-50" />
+                <h3 className="text-2xl font-black mb-4">Trending Now</h3>
+                <p className="text-blue-100 font-medium mb-6">
+                  Global participation has increased by 12% in the last 24 hours.
+                </p>
+                <div className="flex items-center gap-3 text-sm font-black uppercase tracking-widest">
+                  <Users className="w-5 h-5" />
+                  {totalVotes.toLocaleString()} Total Voters
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+                <h4 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
+                  Leading Support
+                </h4>
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
+                  <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+                    <img 
+                      src={iranVotes > israelVotes ? "https://flagcdn.com/w40/ir.png" : "https://flagcdn.com/w40/il.png"} 
+                      alt="Leader"
+                      className="w-8 h-6 object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-8">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-[2.5rem] p-8 text-white shadow-xl">
-              <TrendingUp className="w-10 h-10 mb-6 opacity-50" />
-              <h3 className="text-2xl font-black mb-4">Trending Now</h3>
-              <p className="text-blue-100 font-medium mb-6">
-                Global participation has increased by 12% in the last 24 hours.
-              </p>
-              <div className="flex items-center gap-3 text-sm font-black uppercase tracking-widest">
-                <Users className="w-5 h-5" />
-                {totalVotes.toLocaleString()} Total Voters
-              </div>
-            </div>
-
-            <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
-              <h4 className="text-lg font-black text-gray-900 mb-4 flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                Leading Support
-              </h4>
-              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
-                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
-                  <img 
-                    src={iranVotes > israelVotes ? "https://flagcdn.com/w40/ir.png" : "https://flagcdn.com/w40/il.png"} 
-                    alt="Leader"
-                    className="w-8 h-6 object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div>
-                  <div className="font-black text-gray-900">{iranVotes > israelVotes ? 'Iran' : 'Israel'}</div>
-                  <div className="text-xs font-bold text-gray-500">Currently in the lead</div>
+                  <div>
+                    <div className="font-black text-gray-900">{iranVotes > israelVotes ? 'Iran' : 'Israel'}</div>
+                    <div className="text-xs font-bold text-gray-500">Currently in the lead</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
