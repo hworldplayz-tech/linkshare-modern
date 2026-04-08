@@ -83,13 +83,33 @@ import {
   Code,
   ListMusic,
   Play,
-  Filter
+  Filter,
+  FileStack,
+  GripVertical
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Canvas, FabricImage, Textbox, PencilBrush, Rect } from 'fabric';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
+import { PDFDocument } from 'pdf-lib';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Set PDF.js worker using jsdelivr for version 5.x compatibility
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -4045,6 +4065,276 @@ const WhatsAppStatusFormatter = () => {
   );
 };
 
+// --- Image to PDF & PDF Merger Component ---
+interface SortableFileItemProps {
+  id: string;
+  file: any;
+  onRemove: (id: string) => void;
+  key?: React.Key;
+}
+
+const SortableFileItem = ({ id, file, onRemove }: SortableFileItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style}
+      className={`bg-white p-4 rounded-2xl border ${isDragging ? 'border-[#00a884] shadow-xl ring-2 ring-[#00a884]/10' : 'border-gray-100 shadow-sm'} flex items-center gap-4 group transition-all`}
+    >
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 text-gray-300 hover:text-gray-500 transition-colors">
+        <GripVertical className="w-5 h-5" />
+      </div>
+      
+      <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center overflow-hidden shrink-0 border border-gray-100">
+        {file.preview ? (
+          <img src={file.preview} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <FileText className="w-6 h-6 text-gray-300" />
+        )}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <h4 className="font-bold text-gray-900 truncate text-sm">{file.name}</h4>
+        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+          {(file.size / 1024 / 1024).toFixed(2)} MB
+        </p>
+      </div>
+
+      <button 
+        onClick={() => onRemove(id)}
+        className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </div>
+  );
+};
+
+const ImageToPDFMerger = () => {
+  const [activeTab, setActiveTab] = React.useState<'imageToPdf' | 'pdfMerger'>('imageToPdf');
+  const [files, setFiles] = React.useState<any[]>([]);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(e.target.files || []);
+    if (selectedFiles.length === 0) return;
+
+    const newFiles = selectedFiles.map((file: File) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      file,
+      name: file.name,
+      size: file.size,
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+    }));
+
+    setFiles(prev => [...prev, ...newFiles]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (id: string) => {
+    setFiles(prev => {
+      const fileToRemove = prev.find(f => f.id === id);
+      if (fileToRemove?.preview) URL.revokeObjectURL(fileToRemove.preview);
+      return prev.filter(f => f.id !== id);
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setFiles((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const generatePDF = async () => {
+    if (files.length === 0) return;
+    setIsProcessing(true);
+
+    try {
+      if (activeTab === 'imageToPdf') {
+        const pdf = new jsPDF();
+        
+        for (let i = 0; i < files.length; i++) {
+          const fileObj = files[i];
+          const imgData = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(fileObj.file);
+          });
+
+          if (i > 0) pdf.addPage();
+          
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
+          const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
+          const width = imgProps.width * ratio;
+          const height = imgProps.height * ratio;
+          const x = (pdfWidth - width) / 2;
+          const y = (pdfHeight - height) / 2;
+
+          pdf.addImage(imgData, 'JPEG', x, y, width, height);
+        }
+        pdf.save('converted-images.pdf');
+      } else {
+        const mergedPdf = await PDFDocument.create();
+        
+        for (const fileObj of files) {
+          const pdfBytes = await fileObj.file.arrayBuffer();
+          const pdf = await PDFDocument.load(pdfBytes);
+          const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+          copiedPages.forEach((page) => mergedPdf.addPage(page));
+        }
+
+        const mergedPdfBytes = await mergedPdf.save();
+        const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'merged-document.pdf';
+        link.click();
+      }
+      alert('Success! Your PDF has been generated.');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('An error occurred while generating the PDF.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-[2rem] border border-gray-100 p-2 shadow-sm inline-flex mb-4">
+        <button 
+          onClick={() => {
+            setActiveTab('imageToPdf');
+            setFiles([]);
+          }}
+          className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all ${activeTab === 'imageToPdf' ? 'bg-[#00a884] text-white shadow-lg shadow-[#00a884]/20' : 'text-gray-500 hover:bg-gray-50'}`}
+        >
+          Image to PDF
+        </button>
+        <button 
+          onClick={() => {
+            setActiveTab('pdfMerger');
+            setFiles([]);
+          }}
+          className={`px-6 py-3 rounded-2xl font-bold text-sm transition-all ${activeTab === 'pdfMerger' ? 'bg-[#00a884] text-white shadow-lg shadow-[#00a884]/20' : 'text-gray-500 hover:bg-gray-50'}`}
+        >
+          PDF Merger
+        </button>
+      </div>
+
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-12 shadow-sm">
+        <div className="max-w-2xl mx-auto space-y-8">
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="border-4 border-dashed border-gray-100 rounded-[2rem] p-12 text-center hover:border-[#00a884]/30 hover:bg-[#00a884]/5 transition-all cursor-pointer group"
+          >
+            <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+              <Upload className="w-10 h-10 text-[#00a884]" />
+            </div>
+            <h3 className="text-xl font-black text-gray-900 mb-2">
+              {activeTab === 'imageToPdf' ? 'Upload Images' : 'Upload PDF Files'}
+            </h3>
+            <p className="text-gray-500 font-medium">
+              Drag and drop your files here or click to browse
+            </p>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              multiple
+              accept={activeTab === 'imageToPdf' ? "image/*" : "application/pdf"}
+              className="hidden"
+            />
+          </div>
+
+          {files.length > 0 && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-black text-gray-400 uppercase tracking-widest">
+                  {files.length} Files Selected (Drag to reorder)
+                </h4>
+                <button onClick={() => setFiles([])} className="text-xs font-bold text-red-500 hover:underline">
+                  Clear All
+                </button>
+              </div>
+
+              <DndContext 
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext 
+                  items={files.map(f => f.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {files.map((file) => (
+                      <SortableFileItem 
+                        key={file.id} 
+                        id={file.id} 
+                        file={file} 
+                        onRemove={removeFile} 
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+
+              <Button 
+                onClick={generatePDF}
+                disabled={isProcessing}
+                className="w-full bg-[#00a884] text-white hover:bg-[#008f6f] py-6 font-black rounded-2xl shadow-xl shadow-[#00a884]/20 text-lg"
+              >
+                {isProcessing ? (
+                  <><Loader2 className="w-6 h-6 mr-2 animate-spin" /> Processing...</>
+                ) : (
+                  <>
+                    <Download className="w-6 h-6 mr-2" /> 
+                    {activeTab === 'imageToPdf' ? 'Convert to PDF' : 'Merge PDFs'}
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const WhatsAppGroupNameGenerator = () => {
   const [category, setCategory] = React.useState('Friends');
   const [generatedNames, setGeneratedNames] = React.useState<string[]>([]);
@@ -4226,6 +4516,7 @@ const WhatsAppGroupNameGenerator = () => {
       case 'whatsapp-dp-border': return <WhatsAppDPBorderMaker />;
       case 'qr-code-scanner': return <QRCodeScanner />;
       case 'pdf-editor': return <PDFEditor />;
+      case 'image-pdf-merger': return <ImageToPDFMerger />;
       case 'whatsapp-group-name-generator': return <WhatsAppGroupNameGenerator />;
       case 'whatsapp-status-formatter': return <WhatsAppStatusFormatter />;
       case 'm3u-playlist-viewer': return <M3UPlaylistViewer />;
@@ -4249,6 +4540,22 @@ const WhatsAppGroupNameGenerator = () => {
   };
 
   const getToolContent = () => {
+    if (tool.slug === 'image-pdf-merger') {
+      return {
+        howToUse: [
+          "Choose between 'Image to PDF' or 'PDF Merger' tabs.",
+          "Upload your files by clicking the upload area or dragging them in.",
+          "Drag and drop the files to change their order in the final PDF.",
+          "Click the 'Convert' or 'Merge' button to generate and download your file."
+        ],
+        benefits: [
+          "Combine multiple images into a professional PDF document.",
+          "Merge separate PDF files into one organized file.",
+          "Completely free and works entirely in your browser for privacy.",
+          "No file size limits or watermarks added to your documents."
+        ]
+      };
+    }
     if (tool.slug === 'plagiarism-checker') {
       return {
         howToUse: [

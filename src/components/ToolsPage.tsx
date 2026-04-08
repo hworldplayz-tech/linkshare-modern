@@ -16,7 +16,8 @@ import {
   MessageSquare,
   MessageCircle,
   Circle,
-  ListMusic
+  ListMusic,
+  FileStack
 } from 'lucide-react';
 import { SiteSettings, TOOLS } from '../types';
 import { auth, onAuthStateChanged, googleProvider, signInWithPopup, signOut } from '../firebase';
@@ -44,7 +45,8 @@ const iconMap: Record<string, any> = {
   MessageSquare,
   MessageCircle,
   Circle,
-  ListMusic
+  ListMusic,
+  FileStack
 };
 
 export default function ToolsPage({ settings }: ToolsPageProps) {

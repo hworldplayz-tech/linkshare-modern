@@ -304,6 +304,15 @@ export const TOOLS: Tool[] = [
     enabled: true
   },
   {
+    id: 'image-pdf-merger',
+    title: 'Image to PDF & PDF Merger',
+    slug: 'image-pdf-merger',
+    description: 'Convert multiple images to a single PDF or merge multiple PDF files into one. Drag and drop to reorder.',
+    icon: 'FileStack',
+    category: 'Document',
+    enabled: true
+  },
+  {
     id: 'm3u-playlist-viewer',
     title: 'M3U Playlist Viewer & Reader',
     slug: 'm3u-playlist-viewer',
