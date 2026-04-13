@@ -34,7 +34,8 @@ import {
   Image as ImageIcon,
   Menu,
   Vote,
-  Info
+  Info,
+  AlertCircle
 } from 'lucide-react';
 import { 
   db, 
@@ -618,12 +619,22 @@ export default function AdminPanel() {
 
         <div className="mt-auto p-8 border-t border-gray-50 space-y-4">
           {!user && (
-            <button 
-              onClick={handleGoogleLogin}
-              className="flex items-center gap-3 text-[#00a884] font-bold hover:bg-[#00a884]/5 w-full px-4 py-3 rounded-xl transition-all border border-[#00a884]/20"
-            >
-              <LogIn className="w-5 h-5" /> Connect Google
-            </button>
+            <div className="space-y-3">
+              <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                <p className="text-xs text-amber-700 font-bold flex items-center gap-2">
+                  <AlertCircle className="w-3 h-3" /> Action Required
+                </p>
+                <p className="text-[10px] text-amber-600 mt-1">
+                  You must connect your Google Admin account to perform database actions (delete, update).
+                </p>
+              </div>
+              <button 
+                onClick={handleGoogleLogin}
+                className="flex items-center gap-3 text-[#00a884] font-bold hover:bg-[#00a884]/5 w-full px-4 py-3 rounded-xl transition-all border border-[#00a884]/20"
+              >
+                <LogIn className="w-5 h-5" /> Connect Google
+              </button>
+            </div>
           )}
           {user && (
             <div className="px-4 py-2 bg-gray-50 rounded-xl mb-2">
@@ -2099,16 +2110,48 @@ export default function AdminPanel() {
                   className="flex-1"
                   onClick={() => {
                     if (deletingGroupId) {
-                      deleteDoc(doc(db, 'groups', deletingGroupId)).then(() => setDeletingGroupId(null));
+                      deleteDoc(doc(db, 'groups', deletingGroupId))
+                        .then(() => {
+                          setDeletingGroupId(null);
+                          alert('Group deleted successfully!');
+                        })
+                        .catch((err) => {
+                          console.error('Error deleting group:', err);
+                          alert('Failed to delete group. You might not have sufficient permissions. Please ensure you are logged in with your Google Admin account.');
+                        });
                     }
                     if (deletingTipId) {
-                      deleteTip(deletingTipId).then(() => setDeletingTipId(null));
+                      deleteTip(deletingTipId)
+                        .then(() => {
+                          setDeletingTipId(null);
+                          alert('Tip deleted successfully!');
+                        })
+                        .catch((err) => {
+                          console.error('Error deleting tip:', err);
+                          alert('Failed to delete tip.');
+                        });
                     }
                     if (deletingCategoryId) {
-                      deleteCategory(deletingCategoryId).then(() => setDeletingCategoryId(null));
+                      deleteCategory(deletingCategoryId)
+                        .then(() => {
+                          setDeletingCategoryId(null);
+                          alert('Category deleted successfully!');
+                        })
+                        .catch((err) => {
+                          console.error('Error deleting category:', err);
+                          alert('Failed to delete category.');
+                        });
                     }
                     if (deletingCountryId) {
-                      deleteCountry(deletingCountryId).then(() => setDeletingCountryId(null));
+                      deleteCountry(deletingCountryId)
+                        .then(() => {
+                          setDeletingCountryId(null);
+                          alert('Country deleted successfully!');
+                        })
+                        .catch((err) => {
+                          console.error('Error deleting country:', err);
+                          alert('Failed to delete country.');
+                        });
                     }
                   }}
                 >
