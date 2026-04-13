@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://linksshare.online/sitemap.xml
+Sitemap: https://linkshare.com/sitemap.xml

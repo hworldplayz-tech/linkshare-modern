@@ -52,6 +52,7 @@ import {
   Save,
   Undo,
   Redo,
+  Maximize2,
   MousePointer2,
   Hand,
   MessageSquare,
@@ -85,11 +86,12 @@ import {
   Play,
   Filter,
   FileStack,
-  GripVertical
+  GripVertical,
+  ShieldCheck
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Canvas, FabricImage, Textbox, PencilBrush, Rect } from 'fabric';
+import { Canvas, FabricImage, Textbox, PencilBrush, Rect, Circle as FabricCircle } from 'fabric';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
 import { PDFDocument } from 'pdf-lib';
@@ -4335,6 +4337,569 @@ const ImageToPDFMerger = () => {
   );
 };
 
+const ImageEditor = () => {
+  const [canvas, setCanvas] = React.useState<Canvas | null>(null);
+  const canvasRefObj = React.useRef<Canvas | null>(null);
+  const [activeTool, setActiveTool] = React.useState<'select' | 'draw' | 'text' | 'rect' | 'circle' | 'sticker' | 'filter'>('select');
+  const [color, setColor] = React.useState('#00a884');
+  const [history, setHistory] = React.useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = React.useState(-1);
+  const historyIndexRef = React.useRef(-1);
+  const isHistoryAction = React.useRef(false);
+  const [selectedObject, setSelectedObject] = React.useState<any>(null);
+  const [exportFormat, setExportFormat] = React.useState<'png' | 'jpeg'>('png');
+  const [canvasWidth, setCanvasWidth] = React.useState(800);
+  const [canvasHeight, setCanvasHeight] = React.useState(600);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const overlayInputRef = React.useRef<HTMLInputElement>(null);
+
+  const updateCanvasSize = (w: number, h: number) => {
+    if (!canvas) return;
+    setCanvasWidth(w);
+    setCanvasHeight(h);
+    canvas.setDimensions({ width: w, height: h });
+    canvas.renderAll();
+    saveHistory();
+  };
+
+  const saveHistory = React.useCallback(() => {
+    const currentCanvas = canvasRefObj.current;
+    if (!currentCanvas || isHistoryAction.current) return;
+    const json = JSON.stringify(currentCanvas.toJSON());
+    setHistory(prev => {
+      const newHistory = prev.slice(0, historyIndexRef.current + 1);
+      const updated = [...newHistory, json];
+      historyIndexRef.current = updated.length - 1;
+      setHistoryIndex(historyIndexRef.current);
+      return updated;
+    });
+  }, []);
+
+  const STICKERS = [
+    '🔥', '❤️', '✨', '⭐', '🌟', '💥', '💯', '✅', '❌', '⚠️', 
+    '🚀', '💡', '🎉', '🎈', '🎨', '📸', '💻', '📱', '🌍', '🍕',
+    '😂', '😍', '🤔', '😎', '😭', '👍', '🙌', '👏', '🤝', '💪'
+  ];
+
+  React.useEffect(() => {
+    if (!canvasRef.current || !containerRef.current) return;
+
+    const fabricCanvas = new Canvas(canvasRef.current, {
+      width: 800,
+      height: 600,
+      backgroundColor: '#ffffff'
+    });
+
+    setCanvas(fabricCanvas);
+    canvasRefObj.current = fabricCanvas;
+
+    fabricCanvas.on('object:added', saveHistory);
+    fabricCanvas.on('object:modified', saveHistory);
+    fabricCanvas.on('object:removed', saveHistory);
+    
+    fabricCanvas.on('selection:created', (e) => setSelectedObject(e.selected[0]));
+    fabricCanvas.on('selection:updated', (e) => setSelectedObject(e.selected[0]));
+    fabricCanvas.on('selection:cleared', () => setSelectedObject(null));
+
+    // Initial state
+    const initialJson = JSON.stringify(fabricCanvas.toJSON());
+    setHistory([initialJson]);
+    setHistoryIndex(0);
+    historyIndexRef.current = 0;
+
+    return () => {
+      fabricCanvas.dispose();
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!canvas) return;
+
+    if (activeTool === 'draw') {
+      canvas.isDrawingMode = true;
+      const brush = new PencilBrush(canvas);
+      brush.color = color;
+      brush.width = 5;
+      canvas.freeDrawingBrush = brush;
+    } else {
+      canvas.isDrawingMode = false;
+    }
+  }, [activeTool, color, canvas]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !canvas) return;
+
+    const reader = new FileReader();
+    reader.onload = async (f) => {
+      const data = f.target?.result as string;
+      const img = await FabricImage.fromURL(data);
+      
+      const w = img.width!;
+      const h = img.height!;
+      
+      setCanvasWidth(w);
+      setCanvasHeight(h);
+      
+      canvas.setDimensions({
+        width: w,
+        height: h
+      });
+
+      canvas.backgroundImage = img;
+      canvas.renderAll();
+      saveHistory();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addOverlayImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !canvas) return;
+
+    const reader = new FileReader();
+    reader.onload = async (f) => {
+      const data = f.target?.result as string;
+      const img = await FabricImage.fromURL(data);
+      
+      const center = { left: canvas.width / 2, top: canvas.height / 2 };
+      img.set({
+        left: center.left,
+        top: center.top,
+        originX: 'center',
+        originY: 'center'
+      });
+      
+      // Scale down if too large
+      const maxDim = Math.min(canvas.width!, canvas.height!) * 0.5;
+      if (img.width! > maxDim || img.height! > maxDim) {
+        img.scale(maxDim / Math.max(img.width!, img.height!));
+      } else {
+        img.scale(0.5);
+      }
+
+      canvas.add(img);
+      canvas.setActiveObject(img);
+      canvas.renderAll();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addText = () => {
+    if (!canvas) return;
+    setActiveTool('text');
+    const center = { left: canvas.width / 2, top: canvas.height / 2 };
+    const text = new Textbox('Type here...', {
+      left: center.left,
+      top: center.top,
+      originX: 'center',
+      originY: 'center',
+      width: 200,
+      fontSize: 40,
+      fill: color,
+      fontFamily: 'Inter',
+      textAlign: 'center'
+    });
+    canvas.add(text);
+    canvas.setActiveObject(text);
+  };
+
+  const addRect = () => {
+    if (!canvas) return;
+    setActiveTool('rect');
+    const center = { left: canvas.width / 2, top: canvas.height / 2 };
+    const rect = new Rect({
+      left: center.left,
+      top: center.top,
+      originX: 'center',
+      originY: 'center',
+      fill: color,
+      width: 200,
+      height: 200,
+      transparentCorners: false
+    });
+    canvas.add(rect);
+    canvas.setActiveObject(rect);
+  };
+
+  const addCircle = () => {
+    if (!canvas) return;
+    setActiveTool('circle');
+    const center = { left: canvas.width / 2, top: canvas.height / 2 };
+    const circle = new FabricCircle({
+      left: center.left,
+      top: center.top,
+      originX: 'center',
+      originY: 'center',
+      fill: color,
+      radius: 100,
+      transparentCorners: false
+    });
+    canvas.add(circle);
+    canvas.setActiveObject(circle);
+  };
+
+  const addSticker = (emoji: string) => {
+    if (!canvas) return;
+    const center = { left: canvas.width / 2, top: canvas.height / 2 };
+    const text = new Textbox(emoji, {
+      left: center.left,
+      top: center.top,
+      originX: 'center',
+      originY: 'center',
+      fontSize: 80,
+      textAlign: 'center'
+    });
+    canvas.add(text);
+    canvas.setActiveObject(text);
+    setActiveTool('select');
+  };
+
+  const flipX = () => {
+    if (!selectedObject || !canvas) return;
+    selectedObject.set('flipX', !selectedObject.flipX);
+    canvas.renderAll();
+    saveHistory();
+  };
+
+  const flipY = () => {
+    if (!selectedObject || !canvas) return;
+    selectedObject.set('flipY', !selectedObject.flipY);
+    canvas.renderAll();
+    saveHistory();
+  };
+
+  const rotate = (angle: number) => {
+    if (!selectedObject || !canvas) return;
+    selectedObject.rotate((selectedObject.angle || 0) + angle);
+    canvas.renderAll();
+    saveHistory();
+  };
+
+  const deleteSelected = () => {
+    if (!canvas) return;
+    const activeObjects = canvas.getActiveObjects();
+    canvas.remove(...activeObjects);
+    canvas.discardActiveObject();
+    canvas.renderAll();
+  };
+
+  const clearCanvas = () => {
+    if (!canvas) return;
+    canvas.clear();
+    canvas.backgroundColor = '#ffffff';
+    canvas.renderAll();
+    saveHistory();
+  };
+
+  const undo = () => {
+    if (!canvas || historyIndex <= 0) return;
+    const prevIndex = historyIndex - 1;
+    const state = JSON.parse(history[prevIndex]);
+    isHistoryAction.current = true;
+    canvas.loadFromJSON(state).then(() => {
+      canvas.renderAll();
+      setHistoryIndex(prevIndex);
+      historyIndexRef.current = prevIndex;
+      isHistoryAction.current = false;
+    }).catch(err => {
+      console.error('Undo error:', err);
+      isHistoryAction.current = false;
+    });
+  };
+
+  const redo = () => {
+    if (!canvas || historyIndex >= history.length - 1) return;
+    const nextIndex = historyIndex + 1;
+    const state = JSON.parse(history[nextIndex]);
+    isHistoryAction.current = true;
+    canvas.loadFromJSON(state).then(() => {
+      canvas.renderAll();
+      setHistoryIndex(nextIndex);
+      historyIndexRef.current = nextIndex;
+      isHistoryAction.current = false;
+    }).catch(err => {
+      console.error('Redo error:', err);
+      isHistoryAction.current = false;
+    });
+  };
+
+  const download = () => {
+    if (!canvas) return;
+    const dataURL = canvas.toDataURL({
+      format: exportFormat,
+      quality: 1,
+      multiplier: 1
+    });
+    const link = document.createElement('a');
+    link.href = dataURL;
+    link.download = `edited-image.${exportFormat}`;
+    link.click();
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Top Toolbar - Responsive */}
+      <div className="bg-white rounded-[2rem] border border-gray-100 p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex bg-gray-50 p-1 rounded-xl">
+            <button 
+              onClick={() => setActiveTool('select')}
+              className={`p-2 rounded-lg transition-all flex items-center gap-2 ${activeTool === 'select' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Select"
+            >
+              <MousePointer2 className="w-5 h-5" />
+              <span className="text-xs font-bold hidden sm:inline">Select</span>
+            </button>
+            <button 
+              onClick={() => setActiveTool('draw')}
+              className={`p-2 rounded-lg transition-all flex items-center gap-2 ${activeTool === 'draw' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              title="Draw"
+            >
+              <Edit3 className="w-5 h-5" />
+              <span className="text-xs font-bold hidden sm:inline">Draw</span>
+            </button>
+          </div>
+
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+
+          <div className="flex gap-1">
+            <button 
+              onClick={addText} 
+              className={`p-2 rounded-lg transition-all ${activeTool === 'text' ? 'bg-[#00a884] text-white shadow-sm' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`} 
+              title="Add Text"
+            >
+              <Type className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => setActiveTool('sticker')} 
+              className={`p-2 rounded-lg transition-all ${activeTool === 'sticker' ? 'bg-[#00a884] text-white shadow-sm' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`} 
+              title="Stickers"
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={addRect} 
+              className={`p-2 rounded-lg transition-all ${activeTool === 'rect' ? 'bg-[#00a884] text-white shadow-sm' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`} 
+              title="Rectangle"
+            >
+              <Square className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={addCircle} 
+              className={`p-2 rounded-lg transition-all ${activeTool === 'circle' ? 'bg-[#00a884] text-white shadow-sm' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`} 
+              title="Circle"
+            >
+              <Circle className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="w-px h-6 bg-gray-200 mx-1" />
+
+          <div className="flex gap-1">
+            <button onClick={() => overlayInputRef.current?.click()} className="p-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-all" title="Add Image">
+              <ImageIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-gray-50 text-gray-600 hover:bg-gray-100 rounded-lg transition-all" title="Change Background">
+              <Upload className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-gray-50 p-1 rounded-xl">
+            <button 
+              onClick={undo}
+              disabled={historyIndex <= 0}
+              className="p-2 text-gray-500 hover:text-[#00a884] active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
+              title="Undo"
+            >
+              <Undo className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={redo}
+              disabled={historyIndex >= history.length - 1}
+              className="p-2 text-gray-500 hover:text-[#00a884] active:scale-90 transition-all disabled:opacity-30 disabled:scale-100"
+              title="Redo"
+            >
+              <Redo className="w-5 h-5" />
+            </button>
+          </div>
+          <button onClick={clearCanvas} className="p-2 bg-red-50 text-red-500 hover:bg-red-100 active:scale-90 transition-all rounded-lg" title="Clear Canvas">
+            <Eraser className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Sidebar Controls */}
+        <div className="w-full lg:w-72 space-y-6">
+          {activeTool === 'sticker' && (
+            <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm animate-in fade-in slide-in-from-top-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-black text-gray-900 flex items-center gap-2">
+                  <Smile className="w-4 h-4 text-yellow-500" /> Stickers
+                </h3>
+                <button onClick={() => setActiveTool('select')} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                {STICKERS.map(emoji => (
+                  <button 
+                    key={emoji}
+                    onClick={() => addSticker(emoji)}
+                    className="text-2xl p-2 hover:bg-gray-50 rounded-lg transition-all"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedObject && (
+            <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm animate-in fade-in slide-in-from-left-4">
+              <h3 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2">
+                <Edit2 className="w-4 h-4 text-blue-500" /> Object Settings
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 block">Color</label>
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="color" 
+                      value={color}
+                      onChange={(e) => {
+                        setColor(e.target.value);
+                        selectedObject.set('fill', e.target.value);
+                        canvas?.renderAll();
+                        saveHistory();
+                      }}
+                      className="w-10 h-10 rounded-lg cursor-pointer border-none bg-gray-50 p-1"
+                    />
+                    <span className="text-xs font-mono text-gray-500 uppercase">{color}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={flipX} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-[10px] font-bold flex flex-col items-center gap-1">
+                    <RefreshCw className="w-4 h-4" /> Flip X
+                  </button>
+                  <button onClick={flipY} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-[10px] font-bold flex flex-col items-center gap-1">
+                    <RefreshCw className="w-4 h-4 rotate-90" /> Flip Y
+                  </button>
+                  <button onClick={() => rotate(-90)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-[10px] font-bold flex flex-col items-center gap-1">
+                    <Undo className="w-4 h-4" /> -90°
+                  </button>
+                  <button onClick={() => rotate(90)} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-[10px] font-bold flex flex-col items-center gap-1">
+                    <Redo className="w-4 h-4" /> +90°
+                  </button>
+                </div>
+                <button 
+                  onClick={deleteSelected}
+                  className="w-full p-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg text-xs font-bold flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm">
+            <h3 className="text-sm font-black text-gray-900 mb-4 flex items-center gap-2">
+              <Download className="w-4 h-4 text-[#00a884]" /> Export Settings
+            </h3>
+            <div className="space-y-4">
+              <div className="flex bg-gray-50 p-1 rounded-xl">
+                <button 
+                  onClick={() => setExportFormat('png')}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${exportFormat === 'png' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-500'}`}
+                >
+                  PNG
+                </button>
+                <button 
+                  onClick={() => setExportFormat('jpeg')}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${exportFormat === 'jpeg' ? 'bg-white text-[#00a884] shadow-sm' : 'text-gray-500'}`}
+                >
+                  JPG
+                </button>
+              </div>
+              <Button 
+                onClick={download}
+                className="w-full bg-[#00a884] text-white hover:bg-[#008f6f] py-3 rounded-xl font-black shadow-lg shadow-[#00a884]/20 flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" /> Download {exportFormat.toUpperCase()}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Canvas Area */}
+        <div className="flex-1 space-y-4">
+          <div 
+            ref={containerRef}
+            className="relative bg-gray-200 rounded-[2.5rem] overflow-auto border-4 border-white shadow-inner min-h-[500px] max-h-[80vh] flex items-center justify-center p-4 sm:p-8"
+          >
+            <div className="shadow-2xl bg-white leading-[0]">
+              <canvas ref={canvasRef} />
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between px-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Live Editor</span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-300">|</span>
+              <div className="flex items-center gap-1 group">
+                <Maximize2 className="w-3 h-3 text-gray-300 group-hover:text-[#00a884] transition-colors" />
+                <input 
+                  type="number" 
+                  value={canvasWidth} 
+                  onChange={(e) => updateCanvasSize(parseInt(e.target.value) || 0, canvasHeight)}
+                  className="w-14 bg-gray-50/50 px-1 rounded border border-transparent hover:border-gray-200 focus:border-[#00a884] focus:bg-white text-[10px] font-bold text-gray-600 uppercase tracking-widest outline-none text-center transition-all"
+                  title="Canvas Width"
+                />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">×</span>
+                <input 
+                  type="number" 
+                  value={canvasHeight} 
+                  onChange={(e) => updateCanvasSize(canvasWidth, parseInt(e.target.value) || 0)}
+                  className="w-14 bg-gray-50/50 px-1 rounded border border-transparent hover:border-gray-200 focus:border-[#00a884] focus:bg-white text-[10px] font-bold text-gray-600 uppercase tracking-widest outline-none text-center transition-all"
+                  title="Canvas Height"
+                />
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">PX</span>
+              </div>
+            </div>
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              Fabric Engine v7.2
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Hidden Inputs */}
+      <input 
+        type="file" 
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept="image/*"
+        className="hidden"
+      />
+      <input 
+        type="file" 
+        ref={overlayInputRef}
+        onChange={addOverlayImage}
+        accept="image/*"
+        className="hidden"
+      />
+    </div>
+  );
+};
+
 const WhatsAppGroupNameGenerator = () => {
   const [category, setCategory] = React.useState('Friends');
   const [generatedNames, setGeneratedNames] = React.useState<string[]>([]);
@@ -4517,6 +5082,7 @@ const WhatsAppGroupNameGenerator = () => {
       case 'qr-code-scanner': return <QRCodeScanner />;
       case 'pdf-editor': return <PDFEditor />;
       case 'image-pdf-merger': return <ImageToPDFMerger />;
+      case 'image-editor': return <ImageEditor />;
       case 'whatsapp-group-name-generator': return <WhatsAppGroupNameGenerator />;
       case 'whatsapp-status-formatter': return <WhatsAppStatusFormatter />;
       case 'm3u-playlist-viewer': return <M3UPlaylistViewer />;
@@ -4540,6 +5106,23 @@ const WhatsAppGroupNameGenerator = () => {
   };
 
   const getToolContent = () => {
+    if (tool.slug === 'image-editor') {
+      return {
+        howToUse: [
+          "Upload a background image or start with a blank canvas.",
+          "Use the toolbar to add text, draw, or insert shapes.",
+          "Change colors using the color picker for any selected object.",
+          "Add overlay images to create collages or add watermarks.",
+          "Download your final masterpiece as a high-quality PNG image."
+        ],
+        benefits: [
+          "Quick and easy image editing directly in your browser.",
+          "No software installation or account required.",
+          "Professional tools like layers, undo/redo, and text formatting.",
+          "Completely free with no watermarks added to your work."
+        ]
+      };
+    }
     if (tool.slug === 'image-pdf-merger') {
       return {
         howToUse: [

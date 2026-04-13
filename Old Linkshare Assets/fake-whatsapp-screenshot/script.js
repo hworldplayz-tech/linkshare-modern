@@ -1,5 +1,5 @@
 // Fake WhatsApp Screenshot Tool
-// Author: Agent Mode
+// Author: LinkShare Team
 
 (function () {
   const el = (id) => document.getElementById(id);

@@ -320,5 +320,14 @@ export const TOOLS: Tool[] = [
     icon: 'ListMusic',
     category: 'Utility',
     enabled: true
+  },
+  {
+    id: 'image-editor',
+    title: 'Image Editor Online',
+    slug: 'image-editor',
+    description: 'Edit your images online with ease. Add text, draw, crop, and apply filters directly in your browser.',
+    icon: 'Palette',
+    category: 'Utility',
+    enabled: true
   }
 ];

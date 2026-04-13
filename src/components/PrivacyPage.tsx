@@ -98,6 +98,26 @@ export default function PrivacyPage({ settings }: PrivacyPageProps) {
               </div>
 
               <h2 className="text-3xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                <Shield className="w-8 h-8 text-[#00a884]" /> Cookies and Web Beacons
+              </h2>
+              <p className="mb-6">
+                Like any other website, LinkShare uses 'cookies'. These cookies are used to store information including visitors' preferences, and the pages on the website that the visitor accessed or visited. The information is used to optimize the users' experience by customizing our web page content based on visitors' browser type and/or other information.
+              </p>
+              <p className="mb-16">
+                For more general information on cookies, please read the "Cookies" article from the Privacy Policy Generator.
+              </p>
+
+              <h2 className="text-3xl font-black text-gray-900 mb-8 flex items-center gap-3">
+                <Zap className="w-8 h-8 text-[#00a884]" /> Google DoubleClick DART Cookie
+              </h2>
+              <p className="mb-6">
+                Google is one of a third-party vendor on our site. It also uses cookies, known as DART cookies, to serve ads to our site visitors based upon their visit to www.website.com and other sites on the internet. However, visitors may choose to decline the use of DART cookies by visiting the Google ad and content network Privacy Policy at the following URL – <a href="https://policies.google.com/technologies/ads" className="text-[#00a884] hover:underline">https://policies.google.com/technologies/ads</a>
+              </p>
+              <p className="mb-16">
+                Some of advertisers on our site may use cookies and web beacons. Our advertising partners include Google AdSense. Each of our advertising partners has their own Privacy Policy for their policies on user data. For easier access, we hyperlinked to their Privacy Policies below.
+              </p>
+
+              <h2 className="text-3xl font-black text-gray-900 mb-8 flex items-center gap-3">
                 <Info className="w-8 h-8 text-[#00a884]" /> Information We Collect
               </h2>
               <p className="mb-6">We collect information that you provide directly to us when using LinkShare:</p>
