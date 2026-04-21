@@ -331,6 +331,15 @@ export const TOOLS: Tool[] = [
     enabled: true
   },
   {
+    id: 'source-code-viewer',
+    title: 'Website Source Code Viewer',
+    slug: 'source-code-viewer',
+    description: 'View, search, and analyze the raw HTML source code of any website. Perfect for mobile users and developers.',
+    icon: 'Code',
+    category: 'Dev Tools',
+    enabled: true
+  },
+  {
     id: 'image-editor',
     title: 'Image Editor Online',
     slug: 'image-editor',

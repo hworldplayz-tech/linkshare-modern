@@ -24,6 +24,8 @@ import {
   RefreshCw,
   Palette,
   Check,
+  Code,
+  FileCode,
   ExternalLink,
   Camera,
   Upload,
@@ -81,17 +83,18 @@ import {
   Bold,
   Italic,
   Strikethrough,
-  Code,
   ListMusic,
   Play,
   Filter,
   FileStack,
   GripVertical,
-  ShieldCheck
+  ShieldCheck,
+  Cloud,
+  Heart
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { Canvas, FabricImage, Textbox, PencilBrush, Rect, Circle as FabricCircle } from 'fabric';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
@@ -5210,6 +5213,205 @@ const AICaptionGenerator = () => {
   );
 };
 
+const SourceCodeViewer = () => {
+  const [url, setUrl] = React.useState('');
+  const [source, setSource] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [stats, setStats] = React.useState<any>(null);
+
+  const handleFetch = async () => {
+    if (!url.trim()) {
+      setError('Please enter a website URL.');
+      return;
+    }
+    
+    let targetUrl = url.trim();
+    if (!targetUrl.startsWith('http')) {
+      targetUrl = 'https://' + targetUrl;
+    }
+
+    setIsLoading(true);
+    setError('');
+    setSource('');
+    setStats(null);
+
+    try {
+      const response = await fetch('/api/fetch-source', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: targetUrl }),
+      });
+
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+
+      setSource(data.source);
+      
+      // Calculate Stats
+      const kb = (new Blob([data.source]).size / 1024).toFixed(2);
+      const lines = data.source.split('\n').length;
+      const links = (data.source.match(/href=/g) || []).length;
+      const scripts = (data.source.match(/<script/g) || []).length;
+      const styles = (data.source.match(/<style|<\/link/g) || []).length;
+
+      setStats({ size: kb, lines, links, scripts, styles });
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch source code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownload = (format: 'html' | 'txt') => {
+    const blob = new Blob([source], { type: format === 'html' ? 'text/html' : 'text/plain' });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = href;
+    link.download = `source-${new URL(url.startsWith('http') ? url : 'https://'+url).hostname}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(href);
+  };
+
+  const highlightedSource = React.useMemo(() => {
+    if (!source) return '';
+    
+    // Escape HTML first so it's visible as text
+    const escaped = source
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    if (!searchQuery) return escaped;
+    
+    const regex = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return escaped.replace(regex, '<mark class="bg-[#00a884] text-white rounded-sm px-0.5">$1</mark>');
+  }, [source, searchQuery]);
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-12 shadow-sm">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <LinkIcon className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input 
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleFetch()}
+                placeholder="Enter website URL (e.g. google.com)"
+                className="w-full pl-14 pr-6 py-5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all text-lg"
+              />
+            </div>
+            <Button 
+              onClick={handleFetch}
+              disabled={isLoading}
+              className="w-full md:w-auto bg-[#00a884] text-white hover:bg-[#008f6f] px-10 py-5 font-black rounded-2xl h-auto disabled:opacity-50 shadow-xl shadow-[#00a884]/20"
+            >
+              {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Fetch Source"}
+            </Button>
+          </div>
+          {error && <p className="text-red-500 text-sm font-medium text-center">{error}</p>}
+        </div>
+      </div>
+
+      {source && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+          {/* --- Stats Cards --- */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              { label: 'File Size', value: `${stats.size} KB`, icon: FileCode, color: 'text-blue-500' },
+              { label: 'Total Lines', value: stats.lines, icon: ListMusic, color: 'text-purple-500' },
+              { label: 'Links Found', value: stats.links, icon: LinkIcon, color: 'text-green-500' },
+              { label: 'JS Scripts', value: stats.scripts, icon: Code, color: 'text-orange-500' },
+              { label: 'Stylesheets', value: stats.styles, icon: Palette, color: 'text-pink-500' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center">
+                <stat.icon className={`w-5 h-5 mb-2 ${stat.color}`} />
+                <div className="text-xl font-black text-gray-900">{stat.value}</div>
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-[#1e1e1e] rounded-[2.5rem] border border-gray-800 overflow-hidden shadow-2xl flex flex-col h-[700px]">
+            {/* --- Toolbar --- */}
+            <div className="p-4 bg-gray-900/50 border-b border-gray-800 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input 
+                  type="text"
+                  placeholder="Search in source code..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(source);
+                    alert('Source code copied!');
+                  }}
+                  className="p-2.5 bg-gray-800 border border-gray-700 rounded-xl hover:bg-gray-700 transition-all text-gray-400"
+                  title="Copy All"
+                >
+                  <Copy className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => handleDownload('html')}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-[#00a884] text-white rounded-xl font-bold text-sm hover:bg-[#008f6f] transition-all"
+                >
+                  <Download className="w-4 h-4" /> .HTML
+                </button>
+                <button 
+                  onClick={() => handleDownload('txt')}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-gray-700 text-white rounded-xl font-bold text-sm hover:bg-gray-600 transition-all"
+                >
+                  <FileText className="w-4 h-4" /> .TXT
+                </button>
+              </div>
+            </div>
+
+            {/* --- Code Display --- */}
+            <div className="flex-1 overflow-auto p-0 font-mono text-[13px] leading-6 relative scrollbar-thin scrollbar-thumb-gray-800">
+              <div className="flex min-h-full">
+                {/* --- Line Numbers Gutter --- */}
+                <div className="w-12 bg-gray-900/50 text-right pr-4 text-gray-600 select-none border-r border-gray-800 pt-6 flex-shrink-0">
+                  {Array.from({ length: Math.min(stats.lines, 2000) }).map((_, i) => (
+                    <div key={i} className="h-6 leading-6">{i + 1}</div>
+                  ))}
+                </div>
+                
+                {/* --- Code Content --- */}
+                <div className="p-6 overflow-visible flex-1">
+                  <pre className="text-gray-300 m-0">
+                    <code 
+                      dangerouslySetInnerHTML={{ __html: highlightedSource }}
+                      className="whitespace-pre block"
+                    />
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <p className="text-center text-gray-500 text-xs">
+            <Info className="w-3 h-3 inline mr-1" /> Performance Note: Preview limited to first 2,000 lines. Download for full file.
+          </p>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
   const renderTool = () => {
     switch (tool.slug) {
       case 'plagiarism-checker': return <PlagiarismChecker />;
@@ -5231,6 +5433,7 @@ const AICaptionGenerator = () => {
       case 'whatsapp-status-formatter': return <WhatsAppStatusFormatter />;
       case 'm3u-playlist-viewer': return <M3UPlaylistViewer />;
       case 'whatsapp-caption-generator': return <AICaptionGenerator />;
+      case 'source-code-viewer': return <SourceCodeViewer />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -5556,6 +5759,22 @@ const AICaptionGenerator = () => {
           "Save time thinking of what to write for your daily status updates.",
           "Multiple moods to match every photo and emotion perfectly.",
           "Includes relevant emojis for high social media engagement."
+        ]
+      };
+    }
+    if (tool.slug === 'source-code-viewer') {
+      return {
+        howToUse: [
+          "Enter the full URL of the website you want to inspect.",
+          "Click 'Fetch Source' to load the raw HTML code.",
+          "Use the built-in search bar to find specific tags, CSS, or scripts.",
+          "Download the code as a .html or .txt file for offline analysis."
+        ],
+        benefits: [
+          "Perfect for mobile devices that don't have a native 'View Source' option.",
+          "Automatic counts for file size, scripts, links, and stylesheets.",
+          "Live search and syntax highlighting for easier reading.",
+          "Fast, clean, and 100% legal way to inspect publicly available code."
         ]
       };
     }
