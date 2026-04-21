@@ -62,6 +62,11 @@ app.post('/api/fetch-metadata', async (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'live' });
+});
+
 // API endpoint to fetch raw source code from a URL
 app.post('/api/fetch-source', async (req, res) => {
   const { url } = req.body;
@@ -79,21 +84,25 @@ app.post('/api/fetch-source', async (req, res) => {
         'Pragma': 'no-cache',
       },
       transformResponse: [(data) => data],
-      timeout: 15000,
-      maxRedirects: 5,
+      timeout: 8000, // Reduced to 8s to stay safe within platform limits
+      maxRedirects: 3,
     });
 
-    res.json({ source: response.data });
+    res.json({ source: response.data || '' });
   } catch (error: any) {
     const status = error.response?.status || 500;
-    const message = error.response?.statusText || error.message;
+    const message = error.response ? `Website returned error ${status}` : error.message;
     
-    console.error(`Error fetching source (${status}):`, message);
+    console.error(`Error fetching source (${status}):`, error.message);
     
     if (status === 403) {
       return res.status(403).json({ 
         error: 'Access Forbidden (403). This website blocks automated access or you are trying to fetch your own site which is often restricted by hosting providers.' 
       });
+    }
+
+    if (error.code === 'ECONNABORTED') {
+      return res.status(504).json({ error: 'The request timed out. The website is taking too long to respond.' });
     }
     
     res.status(status).json({ error: `Failed to fetch: ${message}` });

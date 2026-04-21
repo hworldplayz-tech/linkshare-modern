@@ -5244,8 +5244,15 @@ const SourceCodeViewer = () => {
         body: JSON.stringify({ url: targetUrl }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error('Server returned an invalid response. Please try again or check if the website is accessible.');
+      }
+
       if (data.error) throw new Error(data.error);
+      if (!data.source) throw new Error('No source code was returned from the website.');
 
       setSource(data.source);
       
