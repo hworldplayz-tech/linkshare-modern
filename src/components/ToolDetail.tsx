@@ -5244,13 +5244,20 @@ const SourceCodeViewer = () => {
         body: JSON.stringify({ url: targetUrl }),
       });
 
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonErr) {
-        throw new Error('Server returned an invalid response. Please try again or check if the website is accessible.');
+      if (response.status === 500) {
+        throw new Error('The server encountered an error while fetching. This usually happens when the target website blocks automated access.');
       }
 
+      let data;
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.indexOf("application/json") !== -1) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        throw new Error('The server returned an unexpected response. Please try again later.');
+      }
+      
       if (data.error) throw new Error(data.error);
       if (!data.source) throw new Error('No source code was returned from the website.');
 

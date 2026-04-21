@@ -64,12 +64,14 @@ app.post('/api/fetch-metadata', async (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'live' });
+  console.log('Health check requested at:', new Date().toISOString());
+  res.json({ status: 'live', time: new Date().toISOString() });
 });
 
 // API endpoint to fetch raw source code from a URL
 app.post('/api/fetch-source', async (req, res) => {
   const { url } = req.body;
+  console.log(`[API] Fetch source requested for: ${url}`);
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
   }
@@ -135,9 +137,5 @@ async function startServer() {
   });
 }
 
-// Start the server if this file is run directly (Cloud Run / Local Dev)
-// In the AI Studio preview, we also want it to start.
-// Vercel will import the 'app' export and won't run this block if configured correctly.
-if (import.meta.url === `file://${process.argv[1]}` || process.env.NODE_ENV !== 'production') {
-  startServer();
-}
+// Start the server
+startServer();
