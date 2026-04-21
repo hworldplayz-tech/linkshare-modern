@@ -91,6 +91,7 @@ import {
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { GoogleGenAI, Type } from "@google/genai";
 import { Canvas, FabricImage, Textbox, PencilBrush, Rect, Circle as FabricCircle } from 'fabric';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
@@ -5066,6 +5067,149 @@ const WhatsAppGroupNameGenerator = () => {
   );
 };
 
+const AICaptionGenerator = () => {
+  const [topic, setTopic] = React.useState('');
+  const [mood, setMood] = React.useState('Deep');
+  const [captions, setCaptions] = React.useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [error, setError] = React.useState('');
+
+  const moods = [
+    { id: 'Deep', icon: 'Sparkles', color: 'bg-purple-500' },
+    { id: 'Funny', icon: 'Smile', color: 'bg-yellow-500' },
+    { id: 'Witty', icon: 'Lightbulb', color: 'bg-orange-500' },
+    { id: 'Cool', icon: 'RefreshCw', color: 'bg-blue-500' },
+    { id: 'Sad', icon: 'Cloud', color: 'bg-gray-500' },
+    { id: 'Love', icon: 'Heart', color: 'bg-red-500' },
+    { id: 'Motivation', icon: 'Trophy', color: 'bg-green-500' }
+  ];
+
+  const generateCaptions = async () => {
+    if (!topic.trim()) {
+      setError('Please enter a topic or photo description.');
+      return;
+    }
+    setIsGenerating(true);
+    setError('');
+    
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `Generate 5 unique, short, and engaging WhatsApp status captions for a photo about "${topic}". The mood should be "${mood}". 
+      Make them perfect for WhatsApp status (modern, catchy, and use relevant emojis).
+      Return only the captions as a JSON array of strings. Do not include any Markdown formatting or code blocks.`;
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+      
+      const result = JSON.parse(response.text || '[]');
+      setCaptions(Array.isArray(result) ? result : []);
+    } catch (err: any) {
+      console.error(err);
+      setError('AI generation failed. Please check your connection and try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-12 shadow-sm shadow-[#00a884]/5">
+        <div className="max-w-2xl mx-auto space-y-8">
+          <div className="space-y-4">
+            <label className="block text-xl font-black text-gray-900">What is your photo about?</label>
+            <textarea 
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g. A sunset at the beach, my new cat, coding late at night..."
+              className="w-full h-32 px-6 py-5 bg-gray-50 border border-transparent rounded-2xl focus:bg-white focus:border-[#00a884]/30 focus:ring-4 focus:ring-[#00a884]/5 outline-none transition-all resize-none text-lg leading-relaxed text-gray-700"
+            />
+          </div>
+
+          <div className="space-y-4">
+            <label className="block text-lg font-bold text-gray-800 flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-[#00a884]" /> Choose Vibe
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {moods.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setMood(m.id)}
+                  className={`px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 border ${
+                    mood === m.id 
+                      ? 'bg-[#00a884] text-white border-transparent shadow-lg shadow-[#00a884]/20' 
+                      : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {m.id}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <Button 
+              onClick={generateCaptions}
+              disabled={isGenerating || !topic.trim()}
+              className="w-full bg-gray-900 text-white hover:bg-black py-6 font-black rounded-2xl shadow-xl transition-all h-auto disabled:opacity-50"
+            >
+              {isGenerating ? (
+                <><Loader2 className="w-6 h-6 mr-2 animate-spin" /> Brewing Ideas...</>
+              ) : (
+                <><Sparkles className="w-6 h-6 mr-2 text-[#00a884]" /> Generate Captions</>
+              )}
+            </Button>
+            {error && <p className="mt-4 text-center text-red-500 font-medium text-sm">{error}</p>}
+          </div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {captions.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-1 gap-6"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-1 flex-1 bg-gray-100 rounded-full" />
+              <h3 className="text-xl font-black text-gray-900">AI Results</h3>
+              <div className="h-1 flex-1 bg-gray-100 rounded-full" />
+            </div>
+            {captions.map((caption, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.1 }}
+                className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#00a884]/30 hover:shadow-md transition-all sm:flex-row flex-col gap-4 relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-1 h-full bg-[#00a884]/50" />
+                <div className="text-gray-800 font-medium leading-relaxed flex-1 italic text-lg px-2 group-hover:text-gray-900 transition-colors">
+                  "{caption}"
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(caption);
+                    alert('Caption copied!');
+                  }}
+                  className="flex-shrink-0 flex items-center gap-2 px-6 py-3 bg-gray-50 text-gray-400 hover:bg-[#00a884] hover:text-white rounded-xl transition-all font-bold text-sm whitespace-nowrap shadow-sm"
+                >
+                  <Copy className="w-4 h-4" /> Copy
+                </button>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
   const renderTool = () => {
     switch (tool.slug) {
       case 'plagiarism-checker': return <PlagiarismChecker />;
@@ -5086,6 +5230,7 @@ const WhatsAppGroupNameGenerator = () => {
       case 'whatsapp-group-name-generator': return <WhatsAppGroupNameGenerator />;
       case 'whatsapp-status-formatter': return <WhatsAppStatusFormatter />;
       case 'm3u-playlist-viewer': return <M3UPlaylistViewer />;
+      case 'whatsapp-caption-generator': return <AICaptionGenerator />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -5395,6 +5540,22 @@ const WhatsAppGroupNameGenerator = () => {
           "Advanced filtering by name, country, and group category.",
           "100% client-side processing for maximum privacy.",
           "Easy one-click testing and copying of stream links."
+        ]
+      };
+    }
+    if (tool.slug === 'whatsapp-caption-generator') {
+      return {
+        howToUse: [
+          "Describe your photo, mood, or what you are doing in the text box.",
+          "Select the mood or vibe you want for the caption (Deep, Funny, Cool, etc.).",
+          "Click 'Generate Captions' to let the AI create 5 unique options.",
+          "Click 'Copy' on your favorite caption and paste it into your WhatsApp status."
+        ],
+        benefits: [
+          "Powered by advanced Gemini AI for human-like, trendy captions.",
+          "Save time thinking of what to write for your daily status updates.",
+          "Multiple moods to match every photo and emotion perfectly.",
+          "Includes relevant emojis for high social media engagement."
         ]
       };
     }

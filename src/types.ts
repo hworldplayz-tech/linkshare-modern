@@ -322,6 +322,15 @@ export const TOOLS: Tool[] = [
     enabled: true
   },
   {
+    id: 'whatsapp-caption-generator',
+    title: 'AI WhatsApp Status Caption Generator',
+    slug: 'whatsapp-caption-generator',
+    description: 'Get AI-powered deep, funny, and stylish captions for your WhatsApp status based on your mood or photo theme.',
+    icon: 'Sparkles',
+    category: 'AI Tools',
+    enabled: true
+  },
+  {
     id: 'image-editor',
     title: 'Image Editor Online',
     slug: 'image-editor',
