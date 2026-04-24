@@ -90,39 +90,39 @@ app.post('/api/fetch-source', async (req, res) => {
   try {
     const response = await axios.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9',
         'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
       },
       transformResponse: [(data) => data],
-      timeout: 8000, // Reduced to 8s to stay safe within platform limits
-      maxRedirects: 3,
+      timeout: 12000,
+      maxRedirects: 5,
+      validateStatus: (status) => status < 500, // Handle 4xx as successful fetch so we can see the source
     });
 
     res.json({ source: response.data || '' });
   } catch (error: any) {
-    const status = error.response?.status || 500;
-    const message = error.response?.data?.error || error.response?.statusText || error.message;
+    console.error(`[Fetch Error] ${url}:`, error.message);
     
-    console.error(`Error fetching source (${status}):`, error.message);
+    let status = 500;
+    let message = 'An error occurred while fetching the website.';
 
-    // If we have a valid response from the target site, but it's an error status
     if (error.response) {
-      if (status === 403) {
-        return res.status(403).json({ 
-          error: 'Access Forbidden (403). This website blocks automated access (bot detection).' 
-        });
-      }
-      return res.status(status).json({ error: `The website returned an error: ${status} ${message}` });
+      status = error.response.status;
+      message = `The website returned an error (${status}). This often happens with bot protection.`;
+      if (status === 403) message = "Access Forbidden (403). Automated access is blocked by this website.";
+    } else if (error.code === 'ECONNABORTED') {
+      status = 504;
+      message = "Timeout: The website took too long to respond.";
+    } else if (error.message.includes('ENOTFOUND')) {
+      status = 404;
+      message = "The website URL could not be found. Please check the spelling.";
+    } else {
+      message = error.message;
     }
-    
-    if (error.code === 'ECONNABORTED') {
-      return res.status(504).json({ error: 'The request timed out. The website is taking too long to respond.' });
-    }
-    
-    res.status(500).json({ error: `Connection failed: ${message}` });
+
+    res.status(status).json({ error: message });
   }
 });
 
@@ -150,5 +150,8 @@ async function startServer() {
   });
 }
 
-// Start the server
-startServer();
+// Start the server only if we're not in a serverless environment (like Vercel)
+// or if we're explicitly running in production mode locally
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  startServer();
+}

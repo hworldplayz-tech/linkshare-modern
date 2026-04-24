@@ -5244,31 +5244,20 @@ const SourceCodeViewer = () => {
         body: JSON.stringify({ url: targetUrl }),
       });
 
-      if (response.status >= 500) {
-        let errorMsg = 'The server encountered an error while fetching. This usually happens when the target website blocks automated access.';
-        try {
-          const errorData = await response.json();
-          if (errorData.error) errorMsg = errorData.error;
-        } catch (e) {
-          // Fallback to text if JSON fails
-          const text = await response.clone().text();
-          if (text.includes('Too Many Requests')) errorMsg = 'Too many requests. Please wait a moment.';
-        }
-        throw new Error(errorMsg);
-      }
-
+      const responseText = await response.text();
       let data;
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        console.error('Non-JSON response:', text);
-        // Special check for common proxy error pages
-        if (text.includes('<html') || text.includes('An error occurred')) {
-          throw new Error('The server is currently unreachable or rejecting the request. Please try again or check the URL.');
+      
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse server response:', responseText);
+        if (response.status === 403) {
+          throw new Error('Access Forbidden (403). The website is blocking our request.');
         }
-        throw new Error('The server returned an unexpected response format.');
+        if (response.status >= 500) {
+          throw new Error('Server encountered an error while fetching. This usually happens when the target website blocks automated access or bot detection is triggered.');
+        }
+        throw new Error('The server returned an invalid response. Please try again or check the URL.');
       }
       
       if (data.error) throw new Error(data.error);
