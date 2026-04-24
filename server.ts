@@ -10,7 +10,18 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Use process.env.PORT for production compatibility with various hosting providers
+const PORT = Number(process.env.PORT) || 3000;
+
 app.use(express.json());
+
+// Add a specific error handler for JSON parsing errors
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+  next();
+});
 
 // API endpoint to fetch metadata from a URL
 app.post('/api/fetch-metadata', async (req, res) => {
@@ -93,29 +104,31 @@ app.post('/api/fetch-source', async (req, res) => {
     res.json({ source: response.data || '' });
   } catch (error: any) {
     const status = error.response?.status || 500;
-    const message = error.response ? `Website returned error ${status}` : error.message;
+    const message = error.response?.data?.error || error.response?.statusText || error.message;
     
     console.error(`Error fetching source (${status}):`, error.message);
-    
-    if (status === 403) {
-      return res.status(403).json({ 
-        error: 'Access Forbidden (403). This website blocks automated access or you are trying to fetch your own site which is often restricted by hosting providers.' 
-      });
-    }
 
+    // If we have a valid response from the target site, but it's an error status
+    if (error.response) {
+      if (status === 403) {
+        return res.status(403).json({ 
+          error: 'Access Forbidden (403). This website blocks automated access (bot detection).' 
+        });
+      }
+      return res.status(status).json({ error: `The website returned an error: ${status} ${message}` });
+    }
+    
     if (error.code === 'ECONNABORTED') {
       return res.status(504).json({ error: 'The request timed out. The website is taking too long to respond.' });
     }
     
-    res.status(status).json({ error: `Failed to fetch: ${message}` });
+    res.status(500).json({ error: `Connection failed: ${message}` });
   }
 });
 
 export default app;
 
 async function startServer() {
-  const PORT = 3000;
-
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

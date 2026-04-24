@@ -5244,8 +5244,17 @@ const SourceCodeViewer = () => {
         body: JSON.stringify({ url: targetUrl }),
       });
 
-      if (response.status === 500) {
-        throw new Error('The server encountered an error while fetching. This usually happens when the target website blocks automated access.');
+      if (response.status >= 500) {
+        let errorMsg = 'The server encountered an error while fetching. This usually happens when the target website blocks automated access.';
+        try {
+          const errorData = await response.json();
+          if (errorData.error) errorMsg = errorData.error;
+        } catch (e) {
+          // Fallback to text if JSON fails
+          const text = await response.clone().text();
+          if (text.includes('Too Many Requests')) errorMsg = 'Too many requests. Please wait a moment.';
+        }
+        throw new Error(errorMsg);
       }
 
       let data;
@@ -5255,7 +5264,11 @@ const SourceCodeViewer = () => {
       } else {
         const text = await response.text();
         console.error('Non-JSON response:', text);
-        throw new Error('The server returned an unexpected response. Please try again later.');
+        // Special check for common proxy error pages
+        if (text.includes('<html') || text.includes('An error occurred')) {
+          throw new Error('The server is currently unreachable or rejecting the request. Please try again or check the URL.');
+        }
+        throw new Error('The server returned an unexpected response format.');
       }
       
       if (data.error) throw new Error(data.error);
