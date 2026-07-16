@@ -14,14 +14,19 @@ export const PollBanner = ({ settings }: PollBannerProps) => {
   const [poll, setPoll] = useState<any>(null);
 
   useEffect(() => {
+    if (!settings.showPollBanner) {
+      return;
+    }
     const pollRef = doc(db, 'polls', 'iran-vs-israel');
     const unsubscribe = onSnapshot(pollRef, (snapshot) => {
       if (snapshot.exists()) {
         setPoll(snapshot.data());
       }
+    }, (error) => {
+      console.warn("Poll banner info snapshot listener:", error.message);
     });
     return () => unsubscribe();
-  }, []);
+  }, [settings.showPollBanner]);
 
   if (!settings.showPollBanner) return null;
 

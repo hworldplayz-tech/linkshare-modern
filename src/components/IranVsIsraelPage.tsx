@@ -98,8 +98,10 @@ export const IranVsIsraelPage = () => {
           fakeVotesIsrael: 0,
           useFakeVotes: false,
           lastUpdated: serverTimestamp()
-        });
+        }).catch(err => console.warn("Failed to auto-init pollDoc:", err));
       }
+    }, (error) => {
+      console.warn("Poll subscription info watcher:", error.message);
     });
 
     // Real-time country votes
@@ -108,6 +110,8 @@ export const IranVsIsraelPage = () => {
     const unsubscribeCountries = onSnapshot(q, (snapshot) => {
       const votes = snapshot.docs.map(doc => doc.data() as CountryVote);
       setCountryVotes(votes);
+    }, (error) => {
+      console.warn("Countries poll subscription info watcher:", error.message);
     });
 
     // Check local storage for lifetime vote

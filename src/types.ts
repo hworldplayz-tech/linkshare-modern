@@ -79,6 +79,10 @@ export interface SiteSettings {
   globalAdsEnabled: boolean;
   showPollBanner: boolean;
   pollBannerText: string;
+  fifaBannerEnabled: boolean;
+  fifaBannerText: string;
+  fifaWatchEnabled: boolean;
+  fifaEmbedUrl: string;
   adPlacements: AdPlacement[];
 }
 
@@ -111,6 +115,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   headerMenus: [
     { id: '1', label: 'Home', href: '/' },
     { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
+    { id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' },
     { id: '2', label: 'About', href: '/about' },
     { id: '5', label: 'Contact', href: '/contact' },
     { id: '3', label: 'Browse Groups', href: '#groups' },
@@ -125,6 +130,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   footerQuickLinks: [
     { id: '1', label: 'Home', href: '/' },
     { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
+    { id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' },
     { id: '2', label: 'About', href: '/about' },
     { id: '5', label: 'Contact', href: '/contact' },
     { id: '6', label: 'Tips & Tricks', href: '/tips-tricks' },
@@ -148,6 +154,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   globalAdsEnabled: false,
   showPollBanner: true,
   pollBannerText: 'Iran vs Israel Live Voting: Where do you stand? Vote for your favorite country!',
+  fifaBannerEnabled: true,
+  fifaBannerText: '🔥 FIFA World Cup 2026 Live: How & Where to Watch Matches Stream Live around the globe!',
+  fifaWatchEnabled: true,
+  fifaEmbedUrl: 'https://www.youtube.com/embed/2M_HLa71PIU',
   adPlacements: [
     { id: 'global_top', label: 'Global Top Banner', type: 'Banner 728x90', enabled: false, script: '' },
     { id: 'home_hero_bottom', label: 'Home Below Hero', type: 'Banner 728x90', enabled: false, script: '' },

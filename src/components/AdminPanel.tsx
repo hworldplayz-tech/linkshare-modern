@@ -35,13 +35,16 @@ import {
   Menu,
   Vote,
   Info,
-  AlertCircle
+  AlertCircle,
+  Trophy,
+  Tv
 } from 'lucide-react';
 import { 
   db, 
   auth,
   googleProvider,
   signInWithPopup,
+  signOut,
   onAuthStateChanged,
   collection, 
   query, 
@@ -138,6 +141,10 @@ export default function AdminPanel() {
     
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
+      if (u && u.email === 'hworldplayz@gmail.com') {
+        setIsLoggedIn(true);
+        localStorage.setItem('adminLoggedIn', 'true');
+      }
     });
 
     setLoading(false);
@@ -162,11 +169,16 @@ export default function AdminPanel() {
       handleFirestoreError(err, OperationType.GET, 'groups');
     });
 
-    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-      setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (err) => {
-      handleFirestoreError(err, OperationType.GET, 'users');
-    });
+    let unsubUsers = () => {};
+    if (user && user.email === 'hworldplayz@gmail.com') {
+      unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+        setUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      }, (err) => {
+        handleFirestoreError(err, OperationType.GET, 'users');
+      });
+    } else {
+      setUsers([]);
+    }
 
     const unsubCategories = onSnapshot(collection(db, 'categories'), (snapshot) => {
       setCategories(snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name } as Category)));
@@ -197,6 +209,8 @@ export default function AdminPanel() {
         setUseFakeVotes(data.useFakeVotes || false);
         setShowCountries(data.showCountries !== false);
       }
+    }, (error) => {
+      console.warn("Poll subscription admin info snapshot watcher:", error.message);
     });
 
     const unsubPollCountries = onSnapshot(collection(db, 'countryVotes'), (snapshot) => {
@@ -215,7 +229,7 @@ export default function AdminPanel() {
       unsubPoll();
       unsubPollCountries();
     };
-  }, [isLoggedIn]);
+  }, [isLoggedIn, user]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -519,10 +533,18 @@ export default function AdminPanel() {
 
   const handleGoogleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (err) {
+      setError('');
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result.user && result.user.email === 'hworldplayz@gmail.com') {
+        setIsLoggedIn(true);
+        localStorage.setItem('adminLoggedIn', 'true');
+      } else {
+        await signOut(auth);
+        setError('Access denied: Your Google account is not registered as an administrator.');
+      }
+    } catch (err: any) {
       console.error('Error signing in with Google:', err);
-      alert('Failed to sign in with Google');
+      setError(err.message || 'Failed to sign in with Google');
     }
   };
 
@@ -535,7 +557,7 @@ export default function AdminPanel() {
               <ShieldCheck className="text-white w-10 h-10" />
             </div>
             <h1 className="text-3xl font-black text-gray-900">Admin Login</h1>
-            <p className="text-gray-500 mt-2">Enter your credentials to manage LinkShare</p>
+            <p className="text-gray-500 mt-2">Enter credentials or use Google auth</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
@@ -566,6 +588,26 @@ export default function AdminPanel() {
               <LogIn className="w-5 h-5" /> Login to Dashboard
             </Button>
           </form>
+
+          <div className="text-center my-6 flex items-center justify-center gap-2">
+            <span className="h-[1px] bg-gray-200 flex-1"></span>
+            <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">OR</span>
+            <span className="h-[1px] bg-gray-200 flex-1"></span>
+          </div>
+
+          <button 
+            type="button"
+            onClick={handleGoogleLogin} 
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 font-bold py-3 px-4 rounded-xl shadow-sm transition-all duration-200 cursor-pointer text-sm"
+          >
+            <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+              <path fill="#EA4335" d="M12 5.04c1.5 0 2.85.52 3.9 1.5l2.9-2.9C17 1.84 14.63 1 12 1 7.37 1 3.4 3.65 1.5 7.5l3.4 2.6c.86-2.58 3.28-4.46 7.1-4.46z"/>
+              <path fill="#4285F4" d="M23.5 12.25c0-.82-.07-1.6-.2-2.35H12v4.45h6.45c-.28 1.47-1.11 2.72-2.39 3.56l3.64 2.83c2.13-1.97 3.8-5.04 3.8-8.49z"/>
+              <path fill="#FBBC05" d="M4.9 14.9c-.24-.72-.38-1.49-.38-2.3c0-.81.14-1.58.38-2.3L1.5 7.7a10.96 10.96 0 000 8.6l3.4-2.6z"/>
+              <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.92l-3.64-2.83c-1.12.75-2.55 1.25-4.32 1.25-3.82 0-6.24-1.88-7.1-4.46l-3.4 2.6C3.4 20.35 7.37 23 12 23z"/>
+            </svg>
+            Sign in with Google Admin
+          </button>
         </div>
       </div>
     );
@@ -871,6 +913,83 @@ export default function AdminPanel() {
                     </table>
                   </div>
                 </div>
+              </div>
+
+              {/* FIFA World Cup 2026 Live Config Area */}
+              <div className="flex items-center justify-between pt-6 border-t border-gray-100">
+                <h2 className="text-3xl font-black text-gray-900 text-orange-600 flex items-center gap-2">
+                  <Trophy className="w-8 h-8 text-orange-500" />
+                  FIFA World Cup 2026 Live Stream Settings
+                </h2>
+              </div>
+
+              <div className="bg-white p-8 rounded-[2.5rem] border border-orange-100 shadow-sm space-y-8">
+                {/* 1. FIFA Home Banner Toggle */}
+                <div className="flex items-center justify-between p-6 bg-orange-50/20 rounded-3xl border border-orange-100/40">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${settings.fifaBannerEnabled ? 'bg-orange-500 shadow-orange-500/20' : 'bg-gray-300 shadow-gray-200'}`}>
+                      <Trophy className="text-white w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-900">Show FIFA Home Banner</h3>
+                      <p className="text-sm text-gray-500">Enable or disable the FIFA World Cup 2026 Live guide banner on the homepage.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSettings({...settings, fifaBannerEnabled: !settings.fifaBannerEnabled})}
+                    className={`w-16 h-8 rounded-full transition-all relative ${settings.fifaBannerEnabled ? 'bg-orange-500' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${settings.fifaBannerEnabled ? 'left-9' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                {settings.fifaBannerEnabled && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700">FIFA Home Banner Text</label>
+                    <input 
+                      type="text" 
+                      value={settings.fifaBannerText || ''}
+                      onChange={(e) => setSettings({...settings, fifaBannerText: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-sm font-medium"
+                      placeholder="🔥 FIFA World Cup 2026 Live: How & Where to Watch Matches Stream Live around the globe!"
+                    />
+                  </div>
+                )}
+
+                {/* 2. FIFA Watch Now Button / Embed Player system Toggle */}
+                <div className="flex items-center justify-between p-6 bg-orange-50/20 rounded-3xl border border-orange-100/40">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-all ${settings.fifaWatchEnabled ? 'bg-orange-500 shadow-orange-500/20' : 'bg-gray-300 shadow-gray-200'}`}>
+                      <Tv className="text-white w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-900">Enable Watch Live Interactive Video Feed</h3>
+                      <p className="text-sm text-gray-500">When disabled, hides the stream button or renders an offline notification on the blog.</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setSettings({...settings, fifaWatchEnabled: !settings.fifaWatchEnabled})}
+                    className={`w-16 h-8 rounded-full transition-all relative ${settings.fifaWatchEnabled ? 'bg-orange-500' : 'bg-gray-300'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-sm ${settings.fifaWatchEnabled ? 'left-9' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                {settings.fifaWatchEnabled && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700">Live Frame Embed Url (Stream Player Source Link)</label>
+                    <input 
+                      type="text" 
+                      value={settings.fifaEmbedUrl || ''}
+                      onChange={(e) => setSettings({...settings, fifaEmbedUrl: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500/20 text-sm font-mono"
+                      placeholder="e.g. https://www.youtube.com/embed/2M_HLa71PIU"
+                    />
+                    <p className="text-[11px] text-gray-400 leading-relaxed font-semibold">
+                      Ensure this is a dedicated embed link (e.g., has `/embed/` in YouTube paths) so browsers do not reject frame access.
+                    </p>
+                  </div>
+                )}
               </div>
             </motion.div>
           ) : activeTab === 'settings' ? (

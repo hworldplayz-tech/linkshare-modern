@@ -19,6 +19,7 @@ import ToolsPage from './components/ToolsPage';
 import ToolDetail from './components/ToolDetail';
 import RedirectPage from './components/RedirectPage';
 import { IranVsIsraelPage } from './components/IranVsIsraelPage';
+import FifaLivePage from './components/FifaLivePage';
 
 export default function App() {
   // Load initial settings from localStorage if available for instant feel
@@ -52,14 +53,16 @@ export default function App() {
         const needsGlobalAdUpdate = data.globalAdsEnabled === undefined;
         const needsPollMenuUpdate = !data.headerMenus?.some(m => m.href === '/iran-vs-israel');
         const needsPollBannerUpdate = data.showPollBanner === undefined;
+        const needsFifaSettingsUpdate = data.fifaBannerEnabled === undefined || data.fifaWatchEnabled === undefined;
+        const needsFifaMenuUpdate = !data.headerMenus?.some(m => m.href === '/fifa-world-cup-2026-live');
         
         // One-time migration for the new permanent defaults requested by user
         const needsPermanentUpdate = data.siteTitle === 'LinkShare' || 
-                                   data.heroTitle === 'Discover and Promote Your WhatsApp Groups' ||
-                                   data.heroTitleSize === 'h1' ||
-                                   !data.faviconUrl;
+                                    data.heroTitle === 'Discover and Promote Your WhatsApp Groups' ||
+                                    data.heroTitleSize === 'h1' ||
+                                    !data.faviconUrl;
 
-        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate) {
+        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || needsFifaSettingsUpdate || needsFifaMenuUpdate) {
           const updateData: any = {};
           
           if (needsPermanentUpdate) {
@@ -77,10 +80,41 @@ export default function App() {
             updateData.showPollBanner = DEFAULT_SETTINGS.showPollBanner;
             updateData.pollBannerText = DEFAULT_SETTINGS.pollBannerText;
           }
+
+          if (needsFifaSettingsUpdate) {
+            updateData.fifaBannerEnabled = DEFAULT_SETTINGS.fifaBannerEnabled;
+            updateData.fifaBannerText = DEFAULT_SETTINGS.fifaBannerText;
+            updateData.fifaWatchEnabled = DEFAULT_SETTINGS.fifaWatchEnabled;
+            updateData.fifaEmbedUrl = DEFAULT_SETTINGS.fifaEmbedUrl;
+          }
           
+          let currentHeaders = [...(data.headerMenus || [])];
+          let currentFooters = [...(data.footerQuickLinks || [])];
+          let menuChanged = false;
+
           if (needsPollMenuUpdate) {
-            updateData.headerMenus = [...(data.headerMenus || []), { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' }];
-            updateData.footerQuickLinks = [...(data.footerQuickLinks || []), { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' }];
+            if (!currentHeaders.some(m => m.href === '/iran-vs-israel')) {
+              currentHeaders.push({ id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' });
+            }
+            if (!currentFooters.some(m => m.href === '/iran-vs-israel')) {
+              currentFooters.push({ id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' });
+            }
+            menuChanged = true;
+          }
+
+          if (needsFifaMenuUpdate) {
+            if (!currentHeaders.some(m => m.href === '/fifa-world-cup-2026-live')) {
+              currentHeaders.push({ id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' });
+            }
+            if (!currentFooters.some(m => m.href === '/fifa-world-cup-2026-live')) {
+              currentFooters.push({ id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' });
+            }
+            menuChanged = true;
+          }
+
+          if (menuChanged) {
+            updateData.headerMenus = currentHeaders;
+            updateData.footerQuickLinks = currentFooters;
           }
           
           if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate) {
@@ -92,7 +126,7 @@ export default function App() {
               return link;
             });
 
-            updateData.footerQuickLinks = (data.footerQuickLinks || []).map(link => {
+            updateData.footerQuickLinks = (updateData.footerQuickLinks || currentFooters).map(link => {
               const defaultLink = DEFAULT_SETTINGS.footerQuickLinks.find(d => d.label === link.label);
               if ((link.href === '#' || link.href === '/#groups' || link.href === '#groups' || link.href === '#tools') && defaultLink) {
                 return { ...link, href: defaultLink.href };
@@ -100,7 +134,7 @@ export default function App() {
               return link;
             });
 
-            updateData.headerMenus = (data.headerMenus || []).map(link => {
+            updateData.headerMenus = (updateData.headerMenus || currentHeaders).map(link => {
               const defaultLink = DEFAULT_SETTINGS.headerMenus.find(d => d.label === link.label);
               if ((link.href === '#' || link.href === '/#groups' || link.href === '#groups' || link.href === '#tools') && defaultLink) {
                 return { ...link, href: defaultLink.href };
@@ -116,7 +150,15 @@ export default function App() {
             updateData.globalAdsEnabled = DEFAULT_SETTINGS.globalAdsEnabled;
           }
 
-          updateDoc(doc(db, 'settings', 'main'), updateData);
+          const isAdmin = auth.currentUser?.email === 'hworldplayz@gmail.com' || localStorage.getItem('adminLoggedIn') === 'true';
+          if (isAdmin) {
+            updateDoc(doc(db, 'settings', 'main'), updateData).catch((err) => {
+              console.warn('Failed to save settings migration to Firestore:', err);
+            });
+          }
+          
+          // Merge settings in local React memory state so UI gets the migrated state instantly
+          setSettings({ ...data, ...updateData });
         }
 
         // Inject head scripts
@@ -144,10 +186,14 @@ export default function App() {
         }
       } else {
         // Initialize settings if they don't exist
-        setDoc(doc(db, 'settings', 'main'), DEFAULT_SETTINGS);
+        setDoc(doc(db, 'settings', 'main'), DEFAULT_SETTINGS).catch((err) => {
+          console.warn('Failed to initialize settings in Firestore:', err);
+        });
         setSettings(DEFAULT_SETTINGS);
         localStorage.setItem('site_settings', JSON.stringify(DEFAULT_SETTINGS));
       }
+    }, (error) => {
+      console.warn("Settings snapshot listener warning:", error.message);
     });
 
     return () => {
@@ -209,6 +255,7 @@ export default function App() {
         <Route path="/tools" element={<ToolsPage settings={settings} />} />
         <Route path="/tools/:slug" element={<ToolDetail settings={settings} />} />
         <Route path="/iran-vs-israel" element={<IranVsIsraelPage />} />
+        <Route path="/fifa-world-cup-2026-live" element={<FifaLivePage settings={settings} />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/invite/:id" element={<InviteDetail settings={settings} />} />
         <Route path="/s/:shortId" element={<RedirectPage />} />

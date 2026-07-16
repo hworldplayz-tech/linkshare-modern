@@ -44,7 +44,7 @@ service cloud.firestore {
     
     function isAdmin() {
       return isAuthenticated() && 
-        ((request.auth.token.email == "hworldplayz@gmail.com" && request.auth.token.email_verified == true) ||
+        (request.auth.token.email == "hworldplayz@gmail.com" ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
@@ -88,59 +88,49 @@ service cloud.firestore {
 
     match /categories/{categoryId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
     }
 
     match /countries/{countryId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
     }
 
     match /groups/{groupId} {
       allow read: if true; // Publicly readable
-      allow create: if isValidGroup(request.resource.data) && 
-                      (request.resource.data.status == 'pending' || request.resource.data.status == 'approved');
-      allow update: if isAdmin() || (isAuthenticated() && resource.data.authorUid == request.auth.uid && 
-                      request.resource.data.authorUid == resource.data.authorUid &&
-                      request.resource.data.status == resource.data.status && // Cannot approve own group
-                      isValidGroup(request.resource.data));
-      allow delete: if isAdmin() || (isAuthenticated() && resource.data.authorUid == request.auth.uid);
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
 
     match /settings/{settingId} {
       allow read: if true;
       allow create: if true; // Allow initialization
-      allow update: if isAdmin();
+      allow update: if true;
     }
 
     match /tips/{tipId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if true;
     }
 
     match /shortlinks/{shortId} {
       allow read: if true;
       allow create: if true; // Allow anyone to shorten URLs
-      allow update: if isAdmin() || (isAuthenticated() && resource.data.authorUid == request.auth.uid);
-      allow delete: if isAdmin();
+      allow update: if true;
+      allow delete: if true;
     }
 
     match /polls/{pollId} {
       allow read: if true;
       allow create: if true; // Allow initialization
-      allow update: if isAdmin() || 
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['realVotesIran', 'realVotesIsrael', 'lastUpdated']) &&
-         (request.resource.data.realVotesIran == resource.data.realVotesIran + 1 || 
-          request.resource.data.realVotesIsrael == resource.data.realVotesIsrael + 1));
+      allow update: if true;
     }
 
     match /countryVotes/{countryCode} {
       allow read: if true;
       allow create: if true;
-      allow update: if isAdmin() ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votesIran', 'votesIsrael']) &&
-         (request.resource.data.votesIran == resource.data.votesIran + 1 || 
-          request.resource.data.votesIsrael == resource.data.votesIsrael + 1));
+      allow update: if true;
     }
   }
 }
