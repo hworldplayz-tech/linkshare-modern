@@ -114,6 +114,11 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     match /shortlinks/{shortId} {
       allow read: if true;
       allow create: if true; // Allow anyone to shorten URLs

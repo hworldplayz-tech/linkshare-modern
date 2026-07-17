@@ -59,7 +59,7 @@ import {
   handleFirestoreError,
   OperationType
 } from '../firebase';
-import { Group, SiteSettings, MenuItem, DEFAULT_SETTINGS, Category, Country, Tip } from '../types';
+import { Group, SiteSettings, MenuItem, DEFAULT_SETTINGS, Category, Country, Tip, Blog } from '../types';
 import { TIPS } from '../data/tips';
 import { DEFAULT_GROUPS } from '../data/groups';
 import { motion, AnimatePresence } from 'motion/react';
@@ -110,7 +110,8 @@ export default function AdminPanel() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [countries, setCountries] = useState<Country[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
-  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips' | 'ads' | 'menus' | 'polls'>('settings');
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [activeTab, setActiveTab] = useState<'settings' | 'groups' | 'users' | 'categories' | 'countries' | 'tips' | 'blogs' | 'ads' | 'menus' | 'polls'>('settings');
   const [loading, setLoading] = useState(true);
   const [poll, setPoll] = useState<any>(null);
   const [pollCountries, setPollCountries] = useState<any[]>([]);
@@ -128,8 +129,10 @@ export default function AdminPanel() {
   const [editingCountry, setEditingCountry] = useState<{ id: string, name: string } | null>(null);
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
   const [editingTip, setEditingTip] = useState<Tip | null>(null);
+  const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [deletingTipId, setDeletingTipId] = useState<string | null>(null);
+  const [deletingBlogId, setDeletingBlogId] = useState<string | null>(null);
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
   const [deletingCountryId, setDeletingCountryId] = useState<string | null>(null);
 
@@ -198,6 +201,12 @@ export default function AdminPanel() {
       handleFirestoreError(err, OperationType.GET, 'tips');
     });
 
+    const unsubBlogs = onSnapshot(collection(db, 'blogs'), (snapshot) => {
+      setBlogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Blog)));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'blogs');
+    });
+
     const unsubPoll = onSnapshot(doc(db, 'polls', 'iran-vs-israel'), (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
@@ -226,6 +235,7 @@ export default function AdminPanel() {
       unsubCategories();
       unsubCountries();
       unsubTips();
+      unsubBlogs();
       unsubPoll();
       unsubPollCountries();
     };
@@ -431,6 +441,32 @@ export default function AdminPanel() {
       setDeletingTipId(null);
     } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `tips/${id}`);
+    }
+  };
+
+  const saveBlog = async () => {
+    if (!editingBlog) return;
+    try {
+      if (editingBlog.id) {
+        const { id, ...data } = editingBlog;
+        await updateDoc(doc(db, 'blogs', id), data);
+      } else {
+        await addDoc(collection(db, 'blogs'), editingBlog);
+      }
+      setEditingBlog(null);
+      alert('Blog saved successfully!');
+    } catch (err) {
+      console.error('Error saving blog:', err);
+      handleFirestoreError(err, OperationType.WRITE, 'blogs');
+    }
+  };
+
+  const deleteBlog = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'blogs', id));
+      setDeletingBlogId(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `blogs/${id}`);
     }
   };
 
@@ -640,6 +676,7 @@ export default function AdminPanel() {
               { id: 'categories', label: 'Categories', icon: ListIcon },
               { id: 'countries', label: 'Countries', icon: Globe },
               { id: 'tips', label: 'Tips & Tricks', icon: BookOpen },
+              { id: 'blogs', label: 'Blogs', icon: BookOpen },
               { id: 'polls', label: 'Poll Management', icon: Vote },
               { id: 'ads', label: 'Ad Management', icon: Code },
             ].map(tab => (
@@ -1524,6 +1561,66 @@ export default function AdminPanel() {
                 ))}
               </div>
             </motion.div>
+          ) : activeTab === 'blogs' ? (
+            <motion.div 
+              key="blogs"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-2xl md:text-3xl font-black text-gray-900">Manage Blogs</h2>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <Button onClick={() => setEditingBlog({ title: '', slug: '', excerpt: '', content: '', category: 'General', author: 'Admin', imageUrl: '', createdAt: new Date().toISOString() } as any)} className="flex-1 sm:flex-none">
+                    <Plus className="w-5 h-5" /> Add New Blog Post
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {blogs.map((blog) => (
+                  <div key={blog.id} className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden group hover:shadow-md transition-all">
+                    <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                      {blog.imageUrl ? (
+                        <img src={blog.imageUrl} alt={blog.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                          <BookOpen className="w-12 h-12" />
+                        </div>
+                      )}
+                      <div className="absolute top-4 left-4">
+                        <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-[#00a884] text-[10px] font-black uppercase tracking-wider rounded-full shadow-sm">
+                          {blog.category}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="font-black text-gray-900 mb-2 line-clamp-2">{blog.title}</h3>
+                      <p className="text-sm text-gray-500 mb-6 line-clamp-2">{blog.excerpt}</p>
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                          {new Date(blog.createdAt).toLocaleDateString()}
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => setEditingBlog(blog)}
+                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors"
+                          >
+                            <Edit3 className="w-5 h-5" />
+                          </button>
+                          <button 
+                            onClick={() => setDeletingBlogId(blog.id!)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
           ) : activeTab === 'categories' ? (
             <motion.div 
               key="categories"
@@ -2184,9 +2281,156 @@ export default function AdminPanel() {
         )}
       </AnimatePresence>
 
+      {/* Edit Blog Modal */}
+      <AnimatePresence>
+        {editingBlog && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setEditingBlog(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-2xl"
+            >
+              <div className="p-8 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                <h3 className="text-2xl font-black text-gray-900">
+                  {editingBlog.id ? 'Edit Blog Post' : 'Add New Blog Post'}
+                </h3>
+                <button onClick={() => setEditingBlog(null)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Title</label>
+                    <input 
+                      type="text" 
+                      value={editingBlog.title}
+                      onChange={(e) => setEditingBlog({ ...editingBlog, title: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="Blog title..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Slug</label>
+                    <input 
+                      type="text" 
+                      value={editingBlog.slug}
+                      onChange={(e) => setEditingBlog({ ...editingBlog, slug: e.target.value.toLowerCase().replace(/ /g, '-') })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="blog-slug-..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Category</label>
+                    <select 
+                      value={editingBlog.category}
+                      onChange={(e) => setEditingBlog({ ...editingBlog, category: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                    >
+                      {['General', 'Tech Tools', 'Stylish Text', 'Status Saver', 'Guides'].map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Excerpt (Short Description)</label>
+                    <textarea 
+                      value={editingBlog.excerpt}
+                      onChange={(e) => setEditingBlog({ ...editingBlog, excerpt: e.target.value })}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="A brief summary of the blog post..."
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Blog Image (Upload or URL)</label>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-4">
+                        {editingBlog.imageUrl && (
+                          <div className="w-24 h-24 rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center shrink-0">
+                            <img src={editingBlog.imageUrl} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="flex-1 relative">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setEditingBlog({...editingBlog, imageUrl: reader.result as string});
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                            id="blog-modal-image-upload"
+                          />
+                          <label 
+                            htmlFor="blog-modal-image-upload"
+                            className="flex items-center justify-center gap-2 px-4 py-4 bg-gray-50 border border-gray-200 border-dashed rounded-2xl cursor-pointer hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+                          >
+                            <Upload className="w-5 h-5" /> {editingBlog.imageUrl ? 'Change Image' : 'Upload Image'}
+                          </label>
+                        </div>
+                        {editingBlog.imageUrl && (
+                          <button 
+                            onClick={() => setEditingBlog({...editingBlog, imageUrl: ''})}
+                            className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                            title="Remove Image"
+                          >
+                            <X className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold uppercase">URL</div>
+                        <input 
+                          type="text" 
+                          value={editingBlog.imageUrl}
+                          onChange={(e) => setEditingBlog({ ...editingBlog, imageUrl: e.target.value })}
+                          className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                          placeholder="Or paste image URL here..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Content (HTML Supported)</label>
+                    <textarea 
+                      value={editingBlog.content}
+                      onChange={(e) => setEditingBlog({ ...editingBlog, content: e.target.value })}
+                      rows={10}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
+                      placeholder="<p>Write your blog content here...</p>"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-8 border-t border-gray-100 flex justify-end gap-4 sticky bottom-0 bg-white">
+                <Button variant="outline" onClick={() => setEditingBlog(null)}>Cancel</Button>
+                <Button onClick={saveBlog}><Save className="w-5 h-5" /> Save Blog Post</Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Confirmation Modals */}
       <AnimatePresence>
-        {(deletingGroupId || deletingTipId || deletingCategoryId || deletingCountryId) && (
+        {(deletingGroupId || deletingTipId || deletingBlogId || deletingCategoryId || deletingCountryId) && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
@@ -2195,6 +2439,7 @@ export default function AdminPanel() {
               onClick={() => {
                 setDeletingGroupId(null);
                 setDeletingTipId(null);
+                setDeletingBlogId(null);
                 setDeletingCategoryId(null);
                 setDeletingCountryId(null);
               }}
@@ -2218,6 +2463,7 @@ export default function AdminPanel() {
                   onClick={() => {
                     setDeletingGroupId(null);
                     setDeletingTipId(null);
+                    setDeletingBlogId(null);
                     setDeletingCategoryId(null);
                     setDeletingCountryId(null);
                   }}
@@ -2248,6 +2494,17 @@ export default function AdminPanel() {
                         .catch((err) => {
                           console.error('Error deleting tip:', err);
                           alert('Failed to delete tip.');
+                        });
+                    }
+                    if (deletingBlogId) {
+                      deleteBlog(deletingBlogId)
+                        .then(() => {
+                          setDeletingBlogId(null);
+                          alert('Blog deleted successfully!');
+                        })
+                        .catch((err) => {
+                          console.error('Error deleting blog:', err);
+                          alert('Failed to delete blog.');
                         });
                     }
                     if (deletingCategoryId) {

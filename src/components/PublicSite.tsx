@@ -53,7 +53,7 @@ import {
   User,
   doc
 } from '../firebase';
-import { Group, SiteSettings, DEFAULT_SETTINGS, Tip, TOOLS } from '../types';
+import { Group, SiteSettings, DEFAULT_SETTINGS, Tip, TOOLS, Blog } from '../types';
 import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
@@ -96,6 +96,7 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
   const [user, setUser] = useState<User | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [tips, setTips] = useState<Tip[]>([]);
+  const [latestBlogs, setLatestBlogs] = useState<Blog[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,9 +156,18 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
       setTips(tipsData);
     });
 
+    const blogsQ = query(collection(db, 'blogs'), orderBy('createdAt', 'desc'));
+    const unsubBlogs = onSnapshot(blogsQ, (snapshot) => {
+      const blogsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Blog[];
+      setLatestBlogs(blogsData.slice(0, 3));
+    }, (error) => {
+      console.error('Error fetching latest blogs:', error);
+    });
+
     return () => {
       unsubscribe();
       unsubTips();
+      unsubBlogs();
     };
   }, []);
 
@@ -280,6 +290,79 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
 
       {/* --- FIFA banner --- */}
       <FifaBanner settings={settings} />
+
+      {/* --- Latest Blog Posts --- */}
+      {latestBlogs.length > 0 && (
+        <section className="py-16 bg-white border-b border-gray-100">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#00a884]/10 text-[#00a884] rounded-full text-xs font-bold mb-3">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>Stay Updated</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">Latest from our Blog</h2>
+              </div>
+              <Link to="/blogs" className="text-[#00a884] font-bold flex items-center gap-2 hover:underline mt-4 md:mt-0 text-sm">
+                View All Articles <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {latestBlogs.map((blog, idx) => (
+                <motion.article
+                  key={blog.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1 }}
+                  className="group bg-white rounded-[2rem] border border-gray-100 overflow-hidden hover:shadow-2xl hover:shadow-[#00a884]/5 transition-all duration-500 flex flex-col h-full"
+                >
+                  <Link to={`/blog/${blog.slug}`} className="block relative aspect-[16/10] overflow-hidden bg-gray-50">
+                    {blog.imageUrl ? (
+                      <img 
+                        src={blog.imageUrl} 
+                        alt={blog.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <BookOpen className="w-12 h-12" />
+                      </div>
+                    )}
+                    <div className="absolute top-4 left-4">
+                      <span className="px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-[11px] font-bold text-[#00a884] shadow-sm">
+                        {blog.category}
+                      </span>
+                    </div>
+                  </Link>
+                  
+                  <div className="p-6 flex flex-col flex-1">
+                    <Link to={`/blog/${blog.slug}`}>
+                      <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-[#00a884] transition-colors leading-snug line-clamp-2">
+                        {blog.title}
+                      </h3>
+                    </Link>
+                    
+                    <p className="text-gray-500 text-xs mb-4 line-clamp-2 flex-1">
+                      {blog.excerpt}
+                    </p>
+                    
+                    <Link 
+                      to={`/blog/${blog.slug}`}
+                      className="inline-flex items-center gap-1.5 text-[#00a884] font-bold text-xs group/btn mt-auto"
+                    >
+                      Read Full Article
+                      <ArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* --- Featured Groups --- */}
       {featuredGroups.length > 0 && (

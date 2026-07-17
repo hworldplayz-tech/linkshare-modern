@@ -88,6 +88,22 @@
       },
       "required": ["slug", "title", "excerpt", "content", "category", "author"]
     },
+    "Blog": {
+      "title": "Blog",
+      "description": "General or tool related blog posts",
+      "type": "object",
+      "properties": {
+        "slug": { "type": "string" },
+        "title": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "category": { "type": "string" },
+        "author": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["slug", "title", "excerpt", "content", "category", "author"]
+    },
     "ShortLink": {
       "title": "ShortLink",
       "description": "Shortened URL mapping",
@@ -153,6 +169,10 @@
     "/tips/{tipId}": {
       "schema": "Tip",
       "description": "WhatsApp Tips & Tricks tutorials"
+    },
+    "/blogs/{blogId}": {
+      "schema": "Blog",
+      "description": "Blog posts and updates"
     },
     "/shortlinks/{shortId}": {
       "schema": "ShortLink",

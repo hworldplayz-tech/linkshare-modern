@@ -106,6 +106,18 @@ export interface Tip {
   author: string;
 }
 
+export interface Blog {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  createdAt: string;
+  imageUrl: string;
+  category: string;
+  author: string;
+}
+
 export const DEFAULT_SETTINGS: SiteSettings = {
   siteTitle: 'LinkShare - WhatsApp Group Links and Tools Hub. Discover tools and promote your active WhatsApp groups and channels. Join thousands of active communities today.',
   siteDescription: 'The largest WhatsApp Group Links Hub. Discover tools and promote your active WhatsApp groups and channels. Join thousands of active communities today.',
@@ -116,6 +128,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     { id: '1', label: 'Home', href: '/' },
     { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
     { id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' },
+    { id: 'blogs', label: 'Blogs', href: '/blogs' },
     { id: '2', label: 'About', href: '/about' },
     { id: '5', label: 'Contact', href: '/contact' },
     { id: '3', label: 'Browse Groups', href: '#groups' },
@@ -131,6 +144,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     { id: '1', label: 'Home', href: '/' },
     { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
     { id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' },
+    { id: 'blogs', label: 'Blogs', href: '/blogs' },
     { id: '2', label: 'About', href: '/about' },
     { id: '5', label: 'Contact', href: '/contact' },
     { id: '6', label: 'Tips & Tricks', href: '/tips-tricks' },

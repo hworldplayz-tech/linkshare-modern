@@ -3,8 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import ScrollToTop from './components/ScrollToTop';
 import AdPlacement from './components/AdPlacement';
-import { auth, db, doc, onSnapshot, setDoc, updateDoc, onAuthStateChanged, trackUserLogin } from './firebase';
+import { auth, db, doc, onSnapshot, setDoc, updateDoc, onAuthStateChanged, trackUserLogin, collection, getDocs } from './firebase';
 import { SiteSettings, DEFAULT_SETTINGS } from './types';
+import { DEFAULT_BLOGS } from './data/defaultBlogs';
 import PublicSite from './components/PublicSite';
 import AdminPanel from './components/AdminPanel';
 import InviteDetail from './components/InviteDetail';
@@ -15,6 +16,8 @@ import TermsPage from './components/TermsPage';
 import DisclaimerPage from './components/DisclaimerPage';
 import TipsPage from './components/TipsPage';
 import TipDetailPage from './components/TipDetailPage';
+import BlogsPage from './components/BlogsPage';
+import BlogDetailPage from './components/BlogDetailPage';
 import ToolsPage from './components/ToolsPage';
 import ToolDetail from './components/ToolDetail';
 import RedirectPage from './components/RedirectPage';
@@ -55,14 +58,15 @@ export default function App() {
         const needsPollBannerUpdate = data.showPollBanner === undefined;
         const needsFifaSettingsUpdate = data.fifaBannerEnabled === undefined || data.fifaWatchEnabled === undefined;
         const needsFifaMenuUpdate = !data.headerMenus?.some(m => m.href === '/fifa-world-cup-2026-live');
+        const needsBlogsMenuUpdate = !data.headerMenus?.some(m => m.href === '/blogs');
         
         // One-time migration for the new permanent defaults requested by user
         const needsPermanentUpdate = data.siteTitle === 'LinkShare' || 
-                                    data.heroTitle === 'Discover and Promote Your WhatsApp Groups' ||
-                                    data.heroTitleSize === 'h1' ||
-                                    !data.faviconUrl;
+                                     data.heroTitle === 'Discover and Promote Your WhatsApp Groups' ||
+                                     data.heroTitleSize === 'h1' ||
+                                     !data.faviconUrl;
 
-        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || needsFifaSettingsUpdate || needsFifaMenuUpdate) {
+        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || needsFifaSettingsUpdate || needsFifaMenuUpdate || needsBlogsMenuUpdate) {
           const updateData: any = {};
           
           if (needsPermanentUpdate) {
@@ -108,6 +112,16 @@ export default function App() {
             }
             if (!currentFooters.some(m => m.href === '/fifa-world-cup-2026-live')) {
               currentFooters.push({ id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' });
+            }
+            menuChanged = true;
+          }
+
+          if (needsBlogsMenuUpdate) {
+            if (!currentHeaders.some(m => m.href === '/blogs')) {
+              currentHeaders.push({ id: 'blogs', label: 'Blogs', href: '/blogs' });
+            }
+            if (!currentFooters.some(m => m.href === '/blogs')) {
+              currentFooters.push({ id: 'blogs', label: 'Blogs', href: '/blogs' });
             }
             menuChanged = true;
           }
@@ -202,6 +216,25 @@ export default function App() {
     };
   }, []);
 
+  // Auto-seed default blogs if empty on startup
+  useEffect(() => {
+    const seedBlogs = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'blogs'));
+        if (querySnapshot.empty) {
+          console.log('Seeding default blogs...');
+          for (const blog of DEFAULT_BLOGS) {
+            await setDoc(doc(db, 'blogs', blog.id), blog);
+          }
+          console.log('Default blogs seeded successfully!');
+        }
+      } catch (err) {
+        console.warn('Error auto-seeding default blogs:', err);
+      }
+    };
+    seedBlogs();
+  }, []);
+
   // If no settings and no cache, show a minimal loading state
   if (!settings) {
     return (
@@ -252,6 +285,8 @@ export default function App() {
         <Route path="/disclaimer" element={<DisclaimerPage settings={settings} />} />
         <Route path="/tips-tricks" element={<TipsPage settings={settings} />} />
         <Route path="/tips-tricks/:slug" element={<TipDetailPage settings={settings} />} />
+        <Route path="/blogs" element={<BlogsPage settings={settings} />} />
+        <Route path="/blog/:slug" element={<BlogDetailPage settings={settings} />} />
         <Route path="/tools" element={<ToolsPage settings={settings} />} />
         <Route path="/tools/:slug" element={<ToolDetail settings={settings} />} />
         <Route path="/iran-vs-israel" element={<IranVsIsraelPage />} />
