@@ -62,6 +62,7 @@ import {
 import { Group, SiteSettings, MenuItem, DEFAULT_SETTINGS, Category, Country, Tip, Blog } from '../types';
 import { TIPS } from '../data/tips';
 import { DEFAULT_GROUPS } from '../data/groups';
+import { DEFAULT_BLOGS } from '../data/defaultBlogs';
 import { motion, AnimatePresence } from 'motion/react';
 
 const Button = ({ 
@@ -529,6 +530,25 @@ export default function AdminPanel() {
       if (!categories.find(c => c.name === name)) {
         await addDoc(collection(db, 'categories'), { name });
       }
+    }
+  };
+
+  const seedDefaultBlogs = async () => {
+    if (blogs.length > 0) {
+      if (!confirm("This will add default SEO-optimized blog posts. Existing ones with the same IDs will be updated. Continue?")) return;
+    }
+    
+    setLoading(true);
+    try {
+      for (const blog of DEFAULT_BLOGS) {
+        await setDoc(doc(db, 'blogs', blog.id), blog);
+      }
+      alert("Default SEO-optimized blogs added successfully!");
+    } catch (error) {
+      console.error("Error seeding blogs:", error);
+      alert("Failed to seed blogs.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1344,7 +1364,7 @@ export default function AdminPanel() {
 
                   <div className="space-y-4">
                     {settings.headerMenus.map((menu, mIndex) => (
-                      <div key={menu.id} className="p-6 bg-gray-50 rounded-3xl border border-gray-100 space-y-4">
+                      <div key={`${menu.id || mIndex}-${mIndex}`} className="p-6 bg-gray-50 rounded-3xl border border-gray-100 space-y-4">
                         <div className="flex flex-col sm:flex-row gap-4">
                           <div className="flex-1">
                             <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Label</label>
@@ -1385,7 +1405,7 @@ export default function AdminPanel() {
                         {menu.dropdown && menu.dropdown.length > 0 && (
                           <div className="pl-8 space-y-3 border-l-2 border-gray-200 ml-4">
                             {menu.dropdown.map((drop, dIndex) => (
-                              <div key={drop.id} className="flex flex-col sm:flex-row gap-3 items-center">
+                              <div key={`${drop.id || dIndex}-${dIndex}`} className="flex flex-col sm:flex-row gap-3 items-center">
                                 <div className="flex-1">
                                   <input 
                                     type="text" 
@@ -1430,7 +1450,7 @@ export default function AdminPanel() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {settings.footerQuickLinks.map((link, index) => (
-                      <div key={link.id} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div key={`${link.id || index}-${index}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                         <div className="flex-1 space-y-2">
                           <input 
                             type="text" 
@@ -1469,7 +1489,7 @@ export default function AdminPanel() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {settings.footerLegalLinks.map((link, index) => (
-                      <div key={link.id} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div key={`${link.id || index}-${index}`} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                         <div className="flex-1 space-y-2">
                           <input 
                             type="text" 
@@ -1571,6 +1591,9 @@ export default function AdminPanel() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h2 className="text-2xl md:text-3xl font-black text-gray-900">Manage Blogs</h2>
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <Button variant="outline" onClick={seedDefaultBlogs} className="flex-1 sm:flex-none">
+                    <Sparkles className="w-4 h-4" /> Seed Default Blogs
+                  </Button>
                   <Button onClick={() => setEditingBlog({ title: '', slug: '', excerpt: '', content: '', category: 'General', author: 'Admin', imageUrl: '', createdAt: new Date().toISOString() } as any)} className="flex-1 sm:flex-none">
                     <Plus className="w-5 h-5" /> Add New Blog Post
                   </Button>

@@ -26,8 +26,8 @@ export const Footer = ({ settings }: FooterProps) => {
           <div>
             <h4 className="font-bold mb-6">Quick Links</h4>
             <ul className="space-y-4 text-gray-500 text-sm">
-              {settings.footerQuickLinks.map(link => (
-                <li key={link.id}>
+              {settings.footerQuickLinks.map((link, idx) => (
+                <li key={`${link.id || idx}-${idx}`}>
                   {link.href.startsWith('/') ? (
                     <Link to={link.href} className="hover:text-[#00a884]">{link.label}</Link>
                   ) : (
@@ -41,8 +41,8 @@ export const Footer = ({ settings }: FooterProps) => {
           <div>
             <h4 className="font-bold mb-6">Legal</h4>
             <ul className="space-y-4 text-gray-500 text-sm">
-              {settings.footerLegalLinks.map(link => (
-                <li key={link.id}>
+              {settings.footerLegalLinks.map((link, idx) => (
+                <li key={`${link.id || idx}-${idx}`}>
                   {link.href.startsWith('/') ? (
                     <Link to={link.href} className="hover:text-[#00a884]">{link.label}</Link>
                   ) : (

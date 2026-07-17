@@ -59,8 +59,8 @@ export const Navbar = ({
         </Link>
 
         <div className="hidden xl:flex items-center gap-8 text-sm font-medium text-gray-600 flex-nowrap">
-          {settings.headerMenus.map(menu => (
-            <div key={menu.id} className="relative group">
+          {settings.headerMenus.map((menu, mIndex) => (
+            <div key={`${menu.id || mIndex}-${mIndex}`} className="relative group">
               {menu.dropdown && menu.dropdown.length > 0 ? (
                 <>
                   <button className="flex items-center gap-1 hover:text-[#00a884] transition-colors whitespace-nowrap py-4">
@@ -69,10 +69,10 @@ export const Navbar = ({
                   </button>
                   <div className="absolute top-full left-0 pt-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 z-50">
                     <div className="bg-white rounded-2xl shadow-xl border border-gray-100 py-3 min-w-[200px]">
-                      {menu.dropdown.map(drop => (
+                      {menu.dropdown.map((drop, dIndex) => (
                         drop.href.startsWith('/') ? (
                           <Link 
-                            key={drop.id} 
+                            key={`${drop.id || dIndex}-${dIndex}`} 
                             to={drop.href} 
                             className="block px-6 py-2.5 hover:bg-gray-50 hover:text-[#00a884] transition-colors"
                           >
@@ -80,7 +80,7 @@ export const Navbar = ({
                           </Link>
                         ) : (
                           <a 
-                            key={drop.id} 
+                            key={`${drop.id || dIndex}-${dIndex}`} 
                             href={drop.href} 
                             className="block px-6 py-2.5 hover:bg-gray-50 hover:text-[#00a884] transition-colors"
                           >
@@ -142,8 +142,8 @@ export const Navbar = ({
             className="xl:hidden bg-white border-t border-gray-100 overflow-y-auto max-h-[calc(100vh-64px)]"
           >
             <div className="p-4 space-y-4">
-              {settings.headerMenus.map(menu => (
-                <div key={menu.id}>
+              {settings.headerMenus.map((menu, mIndex) => (
+                <div key={`${menu.id || mIndex}-${mIndex}`}>
                   {menu.dropdown && menu.dropdown.length > 0 ? (
                     <div className="space-y-1">
                       <button 
@@ -161,10 +161,10 @@ export const Navbar = ({
                             exit={{ height: 0, opacity: 0 }}
                             className="pl-6 space-y-1 overflow-hidden"
                           >
-                            {menu.dropdown.map(drop => (
+                            {menu.dropdown.map((drop, dIndex) => (
                               drop.href.startsWith('/') ? (
                                 <Link 
-                                  key={drop.id} 
+                                  key={`${drop.id || dIndex}-${dIndex}`} 
                                   to={drop.href} 
                                   onClick={() => setIsMenuOpen(false)}
                                   className="block px-4 py-2.5 text-gray-500 font-medium hover:text-[#00a884] transition-colors"
@@ -173,7 +173,7 @@ export const Navbar = ({
                                 </Link>
                               ) : (
                                 <a 
-                                  key={drop.id} 
+                                  key={`${drop.id || dIndex}-${dIndex}`} 
                                   href={drop.href} 
                                   className="block px-4 py-2.5 text-gray-500 font-medium hover:text-[#00a884] transition-colors"
                                 >

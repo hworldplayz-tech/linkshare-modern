@@ -345,7 +345,7 @@ export const IranVsIsraelPage = () => {
                       const iranP = total > 0 ? Math.round((country.votesIran / total) * 100) : 50;
                       const israelP = 100 - iranP;
                       return (
-                        <div key={country.countryCode} className="space-y-2">
+                        <div key={`${country.countryCode || idx}-${idx}`} className="space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <span className="text-xs font-black text-gray-400 w-6">#{idx + 1}</span>

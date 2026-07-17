@@ -60,13 +60,17 @@ export default function App() {
         const needsFifaMenuUpdate = !data.headerMenus?.some(m => m.href === '/fifa-world-cup-2026-live');
         const needsBlogsMenuUpdate = !data.headerMenus?.some(m => m.href === '/blogs');
         
+        // Check for duplicate menu keys in header or footer to trigger migration and cleanup
+        const hasDuplicateHeaderKeys = data.headerMenus?.some((m, idx) => data.headerMenus.findIndex(x => x.id === m.id) !== idx) || false;
+        const hasDuplicateFooterKeys = data.footerQuickLinks?.some((m, idx) => data.footerQuickLinks.findIndex(x => x.id === m.id) !== idx) || false;
+
         // One-time migration for the new permanent defaults requested by user
         const needsPermanentUpdate = data.siteTitle === 'LinkShare' || 
                                      data.heroTitle === 'Discover and Promote Your WhatsApp Groups' ||
                                      data.heroTitleSize === 'h1' ||
                                      !data.faviconUrl;
 
-        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || needsFifaSettingsUpdate || needsFifaMenuUpdate || needsBlogsMenuUpdate) {
+        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || needsFifaSettingsUpdate || needsFifaMenuUpdate || needsBlogsMenuUpdate || hasDuplicateHeaderKeys || hasDuplicateFooterKeys) {
           const updateData: any = {};
           
           if (needsPermanentUpdate) {
@@ -92,9 +96,22 @@ export default function App() {
             updateData.fifaEmbedUrl = DEFAULT_SETTINGS.fifaEmbedUrl;
           }
           
-          let currentHeaders = [...(data.headerMenus || [])];
-          let currentFooters = [...(data.footerQuickLinks || [])];
-          let menuChanged = false;
+          // Deduplicate by ID helper to prevent React/key errors
+          const deduplicateByID = (menus: any[]) => {
+            const seenIds = new Set<string>();
+            return menus.filter(menu => {
+              if (!menu || !menu.id) return false;
+              if (seenIds.has(menu.id)) {
+                return false;
+              }
+              seenIds.add(menu.id);
+              return true;
+            });
+          };
+
+          let currentHeaders = deduplicateByID([...(data.headerMenus || [])]);
+          let currentFooters = deduplicateByID([...(data.footerQuickLinks || [])]);
+          let menuChanged = hasDuplicateHeaderKeys || hasDuplicateFooterKeys;
 
           if (needsPollMenuUpdate) {
             if (!currentHeaders.some(m => m.href === '/iran-vs-israel')) {
@@ -125,6 +142,10 @@ export default function App() {
             }
             menuChanged = true;
           }
+
+          // Force fresh deduplication again on final lists
+          currentHeaders = deduplicateByID(currentHeaders);
+          currentFooters = deduplicateByID(currentFooters);
 
           if (menuChanged) {
             updateData.headerMenus = currentHeaders;
