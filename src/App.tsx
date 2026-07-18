@@ -59,6 +59,7 @@ export default function App() {
         const needsFifaSettingsUpdate = data.fifaBannerEnabled === undefined || data.fifaWatchEnabled === undefined;
         const needsFifaMenuUpdate = !data.headerMenus?.some(m => m.href === '/fifa-world-cup-2026-live');
         const needsBlogsMenuUpdate = !data.headerMenus?.some(m => m.href === '/blogs');
+        const needsBlogsCountUpdate = data.homepageBlogsCount === undefined;
         
         // Check for duplicate menu keys in header or footer to trigger migration and cleanup
         const hasDuplicateHeaderKeys = data.headerMenus?.some((m, idx) => data.headerMenus.findIndex(x => x.id === m.id) !== idx) || false;
@@ -70,7 +71,7 @@ export default function App() {
                                      data.heroTitleSize === 'h1' ||
                                      !data.faviconUrl;
 
-        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || needsFifaSettingsUpdate || needsFifaMenuUpdate || needsBlogsMenuUpdate || hasDuplicateHeaderKeys || hasDuplicateFooterKeys) {
+        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || needsFifaSettingsUpdate || needsFifaMenuUpdate || needsBlogsMenuUpdate || hasDuplicateHeaderKeys || hasDuplicateFooterKeys || needsBlogsCountUpdate) {
           const updateData: any = {};
           
           if (needsPermanentUpdate) {
@@ -94,6 +95,10 @@ export default function App() {
             updateData.fifaBannerText = DEFAULT_SETTINGS.fifaBannerText;
             updateData.fifaWatchEnabled = DEFAULT_SETTINGS.fifaWatchEnabled;
             updateData.fifaEmbedUrl = DEFAULT_SETTINGS.fifaEmbedUrl;
+          }
+
+          if (needsBlogsCountUpdate) {
+            updateData.homepageBlogsCount = DEFAULT_SETTINGS.homepageBlogsCount;
           }
           
           // Deduplicate by ID helper to prevent React/key errors

@@ -84,6 +84,7 @@ export interface SiteSettings {
   fifaWatchEnabled: boolean;
   fifaEmbedUrl: string;
   adPlacements: AdPlacement[];
+  homepageBlogsCount?: number;
 }
 
 export interface AdPlacement {
@@ -162,6 +163,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   loadMoreEnabled: true,
   groupsPerPage: 20,
   showSubmittedBy: true,
+  homepageBlogsCount: 6,
   tipsSectionImageUrl: 'https://picsum.photos/seed/whatsapp-tips/800/600',
   categories: ['Tech', 'Movies', 'Education', 'Entertainment', 'Business', 'Sports', 'Gaming', 'News', 'Lifestyle', 'Other'],
   countries: ['Global', 'USA', 'Pakistan', 'India', 'UK', 'Canada', 'Australia', 'Germany', 'France', 'Other'],

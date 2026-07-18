@@ -159,7 +159,7 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
     const blogsQ = query(collection(db, 'blogs'), orderBy('createdAt', 'desc'));
     const unsubBlogs = onSnapshot(blogsQ, (snapshot) => {
       const blogsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Blog[];
-      setLatestBlogs(blogsData.slice(0, 3));
+      setLatestBlogs(blogsData);
     }, (error) => {
       console.error('Error fetching latest blogs:', error);
     });
@@ -309,7 +309,7 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {latestBlogs.map((blog, idx) => (
+              {latestBlogs.slice(0, settings.homepageBlogsCount !== undefined ? settings.homepageBlogsCount : 6).map((blog, idx) => (
                 <motion.article
                   key={blog.id}
                   initial={{ opacity: 0, y: 20 }}

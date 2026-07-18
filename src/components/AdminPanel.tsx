@@ -1328,6 +1328,27 @@ export default function AdminPanel() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-gray-100 pt-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Homepage Blog Posts to Show</label>
+                    <select
+                      value={settings.homepageBlogsCount !== undefined ? settings.homepageBlogsCount : 6}
+                      onChange={(e) => setSettings({...settings, homepageBlogsCount: parseInt(e.target.value) || 6})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00a884]/20 font-medium"
+                    >
+                      <option value="3">3 posts (1 row)</option>
+                      <option value="4">4 posts</option>
+                      <option value="5">5 posts</option>
+                      <option value="6">6 posts (2 rows - Default)</option>
+                      <option value="9">9 posts (3 rows)</option>
+                      <option value="12">12 posts (4 rows)</option>
+                      <option value="15">15 posts (5 rows)</option>
+                      <option value="18">18 posts (6 rows)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1.5">Choose how many of the latest blog posts are displayed on the frontend home page. (Multiples of 3 are recommended for the grid layout).</p>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">Footer About Text</label>
                   <textarea 
