@@ -2413,6 +2413,29 @@ export default function AdminPanel() {
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#00a884]/20"
                       placeholder="<p>Write your blog content here...</p>"
                     />
+                    
+                    {/* Interactive Download Button Shortcode Help Desk */}
+                    <div className="mt-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                      <h4 className="text-xs font-black text-emerald-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Premium Download Manager Features
+                      </h4>
+                      <p className="text-xs text-emerald-700 leading-relaxed font-semibold">
+                        You have two powerful options to add high-converting multi-phase download popups to your articles:
+                      </p>
+                      <ul className="list-disc pl-4 mt-2 space-y-1.5 text-xs text-slate-600 font-medium">
+                        <li>
+                          <strong className="text-slate-800">Option 1 (Shortcode - Highly Recommended):</strong> Just insert this anywhere in your text: 
+                          <code className="mx-1 px-1.5 py-0.5 bg-emerald-100 text-emerald-800 rounded font-mono text-[11px] font-bold">
+                            {"[download url=\"https://yourlink.com\" delay=\"5\" title=\"Download File\"]"}
+                          </code>
+                          to render a beautifully animated, fully secure, responsive React download countdown modal with dynamic top and bottom ad banners!
+                        </li>
+                        <li>
+                          <strong className="text-slate-800">Option 2 (Raw Custom HTML / JS):</strong> Paste your raw custom HTML button and script code blocks directly into the content! They are now fully unblocked and will execute/trigger successfully on the frontend.
+                        </li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>

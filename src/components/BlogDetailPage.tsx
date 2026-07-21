@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import { createRoot } from 'react-dom/client';
+import DownloadManager from './DownloadManager';
 import { 
   ChevronLeft, 
   Calendar, 
@@ -102,6 +104,72 @@ export default function BlogDetailPage({ settings }: BlogDetailPageProps) {
 
     return () => unsubscribe();
   }, [slug]);
+
+  const processedContent = React.useMemo(() => {
+    if (!blog?.content) return '';
+    return blog.content.replace(
+      /\[download\s+url="([^"]+)"(?:\s+delay="(\d+)")?(?:\s+title="([^"]+)")?\]/g,
+      (match, url, delay, title) => {
+        const d = delay || '5';
+        const t = title || 'Download File';
+        return `<div class="react-download-manager" data-url="${url}" data-delay="${d}" data-title="${t}"></div>`;
+      }
+    );
+  }, [blog?.content]);
+
+  const downloadRootsRef = React.useRef<any[]>([]);
+
+  React.useEffect(() => {
+    if (!blog || !contentRef.current) return;
+
+    // Clean up existing roots
+    downloadRootsRef.current.forEach(root => {
+      try {
+        root.unmount();
+      } catch (e) {}
+    });
+    downloadRootsRef.current = [];
+
+    const managers = contentRef.current.querySelectorAll('.react-download-manager');
+    
+    managers.forEach(el => {
+      const url = el.getAttribute('data-url') || '';
+      const delay = parseInt(el.getAttribute('data-delay') || '5', 10);
+      const title = el.getAttribute('data-title') || 'Download File';
+
+      if (url) {
+        try {
+          const root = createRoot(el);
+          root.render(<DownloadManager url={url} delay={delay} title={title} settings={settings} />);
+          downloadRootsRef.current.push(root);
+        } catch (err) {
+          console.error('Error rendering DownloadManager:', err);
+        }
+      }
+    });
+
+    // Run custom global JS scripts they might have inside HTML (so they still work!)
+    const scripts = contentRef.current.querySelectorAll('script');
+    scripts.forEach(oldScript => {
+      if (oldScript.dataset.executed) return;
+      oldScript.dataset.executed = 'true';
+      const newScript = document.createElement('script');
+      (Array.from(oldScript.attributes) as Attr[]).forEach(attr => {
+        newScript.setAttribute(attr.name, attr.value);
+      });
+      newScript.textContent = oldScript.textContent;
+      oldScript.parentNode?.replaceChild(newScript, oldScript);
+    });
+
+    return () => {
+      downloadRootsRef.current.forEach(root => {
+        try {
+          root.unmount();
+        } catch (e) {}
+      });
+      downloadRootsRef.current = [];
+    };
+  }, [blog, settings]);
 
   React.useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
@@ -260,7 +328,7 @@ export default function BlogDetailPage({ settings }: BlogDetailPageProps) {
               <div 
                 ref={contentRef}
                 className="prose prose-lg max-w-none prose-headings:font-black prose-headings:tracking-tight prose-p:text-gray-600 prose-a:text-[#00a884] prose-strong:text-gray-900 prose-img:rounded-[2rem] prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-6 prose-pre:rounded-2xl"
-                dangerouslySetInnerHTML={{ __html: blog.content }}
+                dangerouslySetInnerHTML={{ __html: processedContent }}
               />
               
               <AdPlacement id="blogs_detail_bottom" settings={settings} />
