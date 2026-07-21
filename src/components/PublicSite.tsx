@@ -58,7 +58,6 @@ import { Navbar } from './Navbar';
 import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
 import { PollBanner } from './PollBanner';
-import { FifaBanner } from './FifaBanner';
 import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
@@ -287,9 +286,6 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
 
       {/* --- Poll Banner --- */}
       <PollBanner settings={settings} />
-
-      {/* --- FIFA banner --- */}
-      <FifaBanner settings={settings} />
 
       {/* --- Latest Blog Posts --- */}
       {latestBlogs.length > 0 && (

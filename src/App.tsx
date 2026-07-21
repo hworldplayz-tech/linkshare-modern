@@ -22,7 +22,6 @@ import ToolsPage from './components/ToolsPage';
 import ToolDetail from './components/ToolDetail';
 import RedirectPage from './components/RedirectPage';
 import { IranVsIsraelPage } from './components/IranVsIsraelPage';
-import FifaLivePage from './components/FifaLivePage';
 
 export default function App() {
   // Load initial settings from localStorage if available for instant feel
@@ -56,10 +55,10 @@ export default function App() {
         const needsGlobalAdUpdate = data.globalAdsEnabled === undefined;
         const needsPollMenuUpdate = !data.headerMenus?.some(m => m.href === '/iran-vs-israel');
         const needsPollBannerUpdate = data.showPollBanner === undefined;
-        const needsFifaSettingsUpdate = data.fifaBannerEnabled === undefined || data.fifaWatchEnabled === undefined;
-        const needsFifaMenuUpdate = !data.headerMenus?.some(m => m.href === '/fifa-world-cup-2026-live');
         const needsBlogsMenuUpdate = !data.headerMenus?.some(m => m.href === '/blogs');
         const needsBlogsCountUpdate = data.homepageBlogsCount === undefined;
+        const hasFifaMenu = data.headerMenus?.some(m => m.id === 'fifa' || m.href === '/fifa-world-cup-2026-live') ||
+                             data.footerQuickLinks?.some(m => m.id === 'fifa' || m.href === '/fifa-world-cup-2026-live');
         
         // Check for duplicate menu keys in header or footer to trigger migration and cleanup
         const hasDuplicateHeaderKeys = data.headerMenus?.some((m, idx) => data.headerMenus.findIndex(x => x.id === m.id) !== idx) || false;
@@ -71,7 +70,7 @@ export default function App() {
                                      data.heroTitleSize === 'h1' ||
                                      !data.faviconUrl;
 
-        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || needsFifaSettingsUpdate || needsFifaMenuUpdate || needsBlogsMenuUpdate || hasDuplicateHeaderKeys || hasDuplicateFooterKeys || needsBlogsCountUpdate) {
+        if (needsLegalUpdate || needsQuickUpdate || needsHeaderUpdate || needsAdUpdate || needsGlobalAdUpdate || needsPollMenuUpdate || needsPollBannerUpdate || needsPermanentUpdate || hasFifaMenu || needsBlogsMenuUpdate || hasDuplicateHeaderKeys || hasDuplicateFooterKeys || needsBlogsCountUpdate) {
           const updateData: any = {};
           
           if (needsPermanentUpdate) {
@@ -88,13 +87,6 @@ export default function App() {
           if (needsPollBannerUpdate) {
             updateData.showPollBanner = DEFAULT_SETTINGS.showPollBanner;
             updateData.pollBannerText = DEFAULT_SETTINGS.pollBannerText;
-          }
-
-          if (needsFifaSettingsUpdate) {
-            updateData.fifaBannerEnabled = DEFAULT_SETTINGS.fifaBannerEnabled;
-            updateData.fifaBannerText = DEFAULT_SETTINGS.fifaBannerText;
-            updateData.fifaWatchEnabled = DEFAULT_SETTINGS.fifaWatchEnabled;
-            updateData.fifaEmbedUrl = DEFAULT_SETTINGS.fifaEmbedUrl;
           }
 
           if (needsBlogsCountUpdate) {
@@ -114,9 +106,9 @@ export default function App() {
             });
           };
 
-          let currentHeaders = deduplicateByID([...(data.headerMenus || [])]);
-          let currentFooters = deduplicateByID([...(data.footerQuickLinks || [])]);
-          let menuChanged = hasDuplicateHeaderKeys || hasDuplicateFooterKeys;
+          let currentHeaders = deduplicateByID([...(data.headerMenus || [])]).filter(m => m.id !== 'fifa' && m.href !== '/fifa-world-cup-2026-live');
+          let currentFooters = deduplicateByID([...(data.footerQuickLinks || [])]).filter(m => m.id !== 'fifa' && m.href !== '/fifa-world-cup-2026-live');
+          let menuChanged = hasDuplicateHeaderKeys || hasDuplicateFooterKeys || hasFifaMenu;
 
           if (needsPollMenuUpdate) {
             if (!currentHeaders.some(m => m.href === '/iran-vs-israel')) {
@@ -124,16 +116,6 @@ export default function App() {
             }
             if (!currentFooters.some(m => m.href === '/iran-vs-israel')) {
               currentFooters.push({ id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' });
-            }
-            menuChanged = true;
-          }
-
-          if (needsFifaMenuUpdate) {
-            if (!currentHeaders.some(m => m.href === '/fifa-world-cup-2026-live')) {
-              currentHeaders.push({ id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' });
-            }
-            if (!currentFooters.some(m => m.href === '/fifa-world-cup-2026-live')) {
-              currentFooters.push({ id: 'fifa', label: 'FIFA 2026 Live', href: '/fifa-world-cup-2026-live' });
             }
             menuChanged = true;
           }
@@ -316,7 +298,6 @@ export default function App() {
         <Route path="/tools" element={<ToolsPage settings={settings} />} />
         <Route path="/tools/:slug" element={<ToolDetail settings={settings} />} />
         <Route path="/iran-vs-israel" element={<IranVsIsraelPage />} />
-        <Route path="/fifa-world-cup-2026-live" element={<FifaLivePage settings={settings} />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/invite/:id" element={<InviteDetail settings={settings} />} />
         <Route path="/s/:shortId" element={<RedirectPage />} />
