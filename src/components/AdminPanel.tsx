@@ -137,6 +137,21 @@ export default function AdminPanel() {
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
   const [deletingCountryId, setDeletingCountryId] = useState<string | null>(null);
 
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   useEffect(() => {
     const savedLogin = localStorage.getItem('adminLoggedIn');
     if (savedLogin === 'true') {
@@ -259,11 +274,13 @@ export default function AdminPanel() {
   };
 
   const saveSettings = async () => {
+    showToast('Saving settings...', 'info');
     try {
       await setDoc(doc(db, 'settings', 'main'), settings);
-      alert('Settings saved successfully!');
+      showToast('Settings saved successfully!', 'success');
     } catch (err) {
       console.error('Error saving settings:', err);
+      showToast('Failed to save settings.', 'error');
       handleFirestoreError(err, OperationType.WRITE, 'settings/main');
     }
   };
@@ -404,34 +421,40 @@ export default function AdminPanel() {
 
   const saveTip = async () => {
     if (!editingTip) return;
+    const tipData = { ...editingTip };
+    setEditingTip(null);
+    showToast('Saving tutorial...', 'info');
     try {
-      if (editingTip.id) {
-        const { id, ...data } = editingTip;
+      if (tipData.id) {
+        const { id, ...data } = tipData;
         await updateDoc(doc(db, 'tips', id), data);
       } else {
-        await addDoc(collection(db, 'tips'), editingTip);
+        await addDoc(collection(db, 'tips'), tipData);
       }
-      setEditingTip(null);
-      alert('Tip saved successfully!');
+      showToast('Tutorial saved successfully!', 'success');
     } catch (err) {
       console.error('Error saving tip:', err);
+      showToast('Failed to save tutorial.', 'error');
       handleFirestoreError(err, OperationType.WRITE, 'tips');
     }
   };
 
   const saveGroup = async () => {
     if (!editingGroup) return;
+    const groupData = { ...editingGroup };
+    setEditingGroup(null);
+    showToast('Saving group...', 'info');
     try {
-      if (editingGroup.id) {
-        const { id, ...data } = editingGroup;
+      if (groupData.id) {
+        const { id, ...data } = groupData;
         await updateDoc(doc(db, 'groups', id), data);
       } else {
-        await addDoc(collection(db, 'groups'), editingGroup);
+        await addDoc(collection(db, 'groups'), groupData);
       }
-      setEditingGroup(null);
-      alert('Group saved successfully!');
+      showToast('Group saved successfully!', 'success');
     } catch (err) {
       console.error('Error saving group:', err);
+      showToast('Failed to save group.', 'error');
       handleFirestoreError(err, OperationType.WRITE, 'groups');
     }
   };
@@ -447,17 +470,20 @@ export default function AdminPanel() {
 
   const saveBlog = async () => {
     if (!editingBlog) return;
+    const blogData = { ...editingBlog };
+    setEditingBlog(null);
+    showToast('Saving blog post...', 'info');
     try {
-      if (editingBlog.id) {
-        const { id, ...data } = editingBlog;
+      if (blogData.id) {
+        const { id, ...data } = blogData;
         await updateDoc(doc(db, 'blogs', id), data);
       } else {
-        await addDoc(collection(db, 'blogs'), editingBlog);
+        await addDoc(collection(db, 'blogs'), blogData);
       }
-      setEditingBlog(null);
-      alert('Blog saved successfully!');
+      showToast('Blog post saved successfully!', 'success');
     } catch (err) {
       console.error('Error saving blog:', err);
+      showToast('Failed to save blog post.', 'error');
       handleFirestoreError(err, OperationType.WRITE, 'blogs');
     }
   };
@@ -553,6 +579,7 @@ export default function AdminPanel() {
   };
 
   const savePollSettings = async () => {
+    showToast('Saving poll settings...', 'info');
     try {
       await updateDoc(doc(db, 'polls', 'iran-vs-israel'), {
         fakeVotesIran: Number(fakeVotesIran),
@@ -565,23 +592,27 @@ export default function AdminPanel() {
       });
       // Also save site settings for the banner
       await setDoc(doc(db, 'settings', 'main'), settings);
-      alert('Poll settings saved successfully!');
+      showToast('Poll settings saved successfully!', 'success');
     } catch (err) {
       console.error('Error saving poll settings:', err);
+      showToast('Failed to save poll settings.', 'error');
       handleFirestoreError(err, OperationType.WRITE, 'polls/iran-vs-israel');
     }
   };
 
   const savePollCountry = async () => {
     if (!editingPollCountry) return;
+    const countryData = { ...editingPollCountry };
+    setEditingPollCountry(null);
+    showToast('Saving country updates...', 'info');
     try {
-      const { id, ...data } = editingPollCountry;
+      const { id, ...data } = countryData;
       await updateDoc(doc(db, 'countryVotes', id), data);
-      setEditingPollCountry(null);
-      alert('Country updated successfully!');
+      showToast('Country updated successfully!', 'success');
     } catch (err) {
       console.error('Error saving poll country:', err);
-      handleFirestoreError(err, OperationType.UPDATE, `countryVotes/${editingPollCountry.id}`);
+      showToast('Failed to update country.', 'error');
+      handleFirestoreError(err, OperationType.UPDATE, `countryVotes/${countryData.id}`);
     }
   };
 
@@ -2442,58 +2473,68 @@ export default function AdminPanel() {
                   className="flex-1"
                   onClick={() => {
                     if (deletingGroupId) {
-                      deleteDoc(doc(db, 'groups', deletingGroupId))
+                      const id = deletingGroupId;
+                      setDeletingGroupId(null);
+                      showToast('Deleting group...', 'info');
+                      deleteDoc(doc(db, 'groups', id))
                         .then(() => {
-                          setDeletingGroupId(null);
-                          alert('Group deleted successfully!');
+                          showToast('Group deleted successfully!', 'success');
                         })
                         .catch((err) => {
                           console.error('Error deleting group:', err);
-                          alert('Failed to delete group. You might not have sufficient permissions. Please ensure you are logged in with your Google Admin account.');
+                          showToast('Failed to delete group.', 'error');
                         });
                     }
                     if (deletingTipId) {
-                      deleteTip(deletingTipId)
+                      const id = deletingTipId;
+                      setDeletingTipId(null);
+                      showToast('Deleting tip...', 'info');
+                      deleteTip(id)
                         .then(() => {
-                          setDeletingTipId(null);
-                          alert('Tip deleted successfully!');
+                          showToast('Tip deleted successfully!', 'success');
                         })
                         .catch((err) => {
                           console.error('Error deleting tip:', err);
-                          alert('Failed to delete tip.');
+                          showToast('Failed to delete tip.', 'error');
                         });
                     }
                     if (deletingBlogId) {
-                      deleteBlog(deletingBlogId)
+                      const id = deletingBlogId;
+                      setDeletingBlogId(null);
+                      showToast('Deleting blog...', 'info');
+                      deleteBlog(id)
                         .then(() => {
-                          setDeletingBlogId(null);
-                          alert('Blog deleted successfully!');
+                          showToast('Blog deleted successfully!', 'success');
                         })
                         .catch((err) => {
                           console.error('Error deleting blog:', err);
-                          alert('Failed to delete blog.');
+                          showToast('Failed to delete blog.', 'error');
                         });
                     }
                     if (deletingCategoryId) {
-                      deleteCategory(deletingCategoryId)
+                      const id = deletingCategoryId;
+                      setDeletingCategoryId(null);
+                      showToast('Deleting category...', 'info');
+                      deleteCategory(id)
                         .then(() => {
-                          setDeletingCategoryId(null);
-                          alert('Category deleted successfully!');
+                          showToast('Category deleted successfully!', 'success');
                         })
                         .catch((err) => {
                           console.error('Error deleting category:', err);
-                          alert('Failed to delete category.');
+                          showToast('Failed to delete category.', 'error');
                         });
                     }
                     if (deletingCountryId) {
-                      deleteCountry(deletingCountryId)
+                      const id = deletingCountryId;
+                      setDeletingCountryId(null);
+                      showToast('Deleting country...', 'info');
+                      deleteCountry(id)
                         .then(() => {
-                          setDeletingCountryId(null);
-                          alert('Country deleted successfully!');
+                          showToast('Country deleted successfully!', 'success');
                         })
                         .catch((err) => {
                           console.error('Error deleting country:', err);
-                          alert('Failed to delete country.');
+                          showToast('Failed to delete country.', 'error');
                         });
                     }
                   }}
@@ -2503,6 +2544,30 @@ export default function AdminPanel() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={`fixed bottom-6 right-6 z-[120] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl border font-bold text-sm ${
+              toast.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' :
+              toast.type === 'error' ? 'bg-red-50 border-red-100 text-red-800' :
+              'bg-blue-50 border-blue-100 text-blue-800'
+            }`}
+          >
+            {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />}
+            {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />}
+            {toast.type === 'info' && <Info className="w-5 h-5 text-blue-500 shrink-0" />}
+            <span>{toast.message}</span>
+            <button onClick={() => setToast(null)} className="ml-2 p-1 hover:bg-black/5 rounded-lg transition-colors shrink-0 text-current opacity-60 hover:opacity-100">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
