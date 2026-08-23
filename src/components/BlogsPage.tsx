@@ -69,9 +69,13 @@ export default function BlogsPage({ settings }: BlogsPageProps) {
   };
 
   React.useEffect(() => {
-    const q = query(collection(db, 'blogs'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, 'blogs'), (snapshot) => {
       const blogsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Blog[];
+      blogsData.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
       setBlogs(blogsData);
       setLoading(false);
     }, (error) => {

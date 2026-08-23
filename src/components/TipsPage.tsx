@@ -69,10 +69,17 @@ export default function TipsPage({ settings }: TipsPageProps) {
   };
 
   React.useEffect(() => {
-    const q = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(collection(db, 'tips'), (snapshot) => {
       const tipsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tip[];
+      tipsData.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
       setTips(tipsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error loading tips:", error);
       setLoading(false);
     });
     return () => unsubscribe();

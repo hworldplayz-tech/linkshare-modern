@@ -61,6 +61,7 @@ import { PollBanner } from './PollBanner';
 import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
+import { getToolVisual } from '../lib/toolVisuals';
 
 // --- Components ---
 
@@ -149,15 +150,25 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
       setLoading(false);
     });
 
-    const tipsQ = query(collection(db, 'tips'), orderBy('createdAt', 'desc'));
-    const unsubTips = onSnapshot(tipsQ, (snapshot) => {
+    const unsubTips = onSnapshot(collection(db, 'tips'), (snapshot) => {
       const tipsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Tip[];
+      tipsData.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
       setTips(tipsData);
+    }, (error) => {
+      console.error('Error fetching tips:', error);
     });
 
-    const blogsQ = query(collection(db, 'blogs'), orderBy('createdAt', 'desc'));
-    const unsubBlogs = onSnapshot(blogsQ, (snapshot) => {
+    const unsubBlogs = onSnapshot(collection(db, 'blogs'), (snapshot) => {
       const blogsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Blog[];
+      blogsData.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
       setLatestBlogs(blogsData);
     }, (error) => {
       console.error('Error fetching latest blogs:', error);
@@ -410,35 +421,45 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
       )}
 
       {/* --- Tools Grid --- */}
-      <section id="tools" className="py-20">
+      <section id="tools" className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-black mb-4">Discover Powerful Tools</h2>
-            <p className="text-gray-600">Free online tools to boost your productivity and enhance your content.</p>
+          <div className="text-center mb-10 md:mb-14">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#008f6f] mb-3 tracking-tight">
+              Explore Our Tools
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
+              Free online tools to boost your productivity and enhance your content.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5">
             {TOOLS.filter(t => t.enabled).map((tool) => {
-              const Icon = iconMap[tool.icon] || Zap;
+              const visual = getToolVisual(tool.id);
+              const ToolIcon = visual.icon;
+
               return (
-                <Card 
+                <div 
                   key={tool.id} 
-                  className="p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group"
+                  className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1.5 hover:border-[#00a884]/40 transition-all duration-300 group min-h-[140px] sm:min-h-[160px] md:min-h-[180px]"
                   onClick={() => navigate(`/tools/${tool.slug}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      navigate(`/tools/${tool.slug}`);
+                    }
+                  }}
                 >
-                  <div className="flex gap-4">
-                    <div className="w-14 h-14 bg-[#00a884]/10 rounded-2xl flex items-center justify-center group-hover:bg-[#00a884] transition-colors">
-                      <Icon className="w-7 h-7 text-[#00a884] group-hover:text-white transition-colors" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg mb-1">{tool.title}</h3>
-                      <p className="text-sm text-gray-500 leading-relaxed">{tool.description}</p>
-                      <button className="mt-4 text-[#00a884] text-sm font-bold flex items-center gap-1 group-hover:gap-2 transition-all">
-                        Try Now <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <div className={cn(
+                    "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-transform duration-300 group-hover:scale-110",
+                    visual.bgClass
+                  )}>
+                    <ToolIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
                   </div>
-                </Card>
+                  <h3 className="font-bold text-xs sm:text-sm md:text-base text-gray-800 group-hover:text-[#00a884] transition-colors leading-snug line-clamp-2 px-1">
+                    {tool.title}
+                  </h3>
+                </div>
               );
             })}
           </div>

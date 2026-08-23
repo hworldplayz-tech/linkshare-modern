@@ -28,6 +28,8 @@ import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
 import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
+import { cn } from '../lib/utils';
+import { getToolVisual } from '../lib/toolVisuals';
 
 interface ToolsPageProps {
   settings: SiteSettings;
@@ -164,53 +166,37 @@ export default function ToolsPage({ settings }: ToolsPageProps) {
       </section>
 
       {/* --- Tools Grid --- */}
-      <section className="py-20">
+      <section className="py-16 md:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           {filteredTools.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5">
               {filteredTools.map((tool, idx) => {
-                const Icon = iconMap[tool.icon] || Wrench;
+                const visual = getToolVisual(tool.id);
+                const ToolIcon = visual.icon;
+
                 return (
-                  <motion.article
+                  <motion.div
                     key={tool.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1 }}
-                    className="group bg-white rounded-[2.5rem] border border-gray-100 p-8 hover:shadow-2xl hover:shadow-[#00a884]/10 transition-all duration-500 flex flex-col h-full relative overflow-hidden"
+                    transition={{ delay: Math.min(idx * 0.03, 0.3) }}
                   >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#00a884]/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
-                    
-                    <div className="w-16 h-16 bg-[#00a884]/10 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500 relative z-10">
-                      <Icon className="w-8 h-8 text-[#00a884]" />
-                    </div>
-
-                    <div className="relative z-10 flex-1">
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className="px-3 py-1 bg-gray-100 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                          {tool.category}
-                        </span>
-                      </div>
-                      
-                      <Link to={`/tools/${tool.slug}`}>
-                        <h3 className="text-2xl font-black text-gray-900 mb-4 group-hover:text-[#00a884] transition-colors leading-tight">
-                          {tool.title}
-                        </h3>
-                      </Link>
-                      
-                      <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-                        {tool.description}
-                      </p>
-                    </div>
-                    
-                    <Link 
+                    <Link
                       to={`/tools/${tool.slug}`}
-                      className="inline-flex items-center gap-2 text-[#00a884] font-bold text-sm group/btn relative z-10"
+                      className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1.5 hover:border-[#00a884]/40 transition-all duration-300 group min-h-[140px] sm:min-h-[160px] md:min-h-[180px] h-full"
                     >
-                      Open Tool
-                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+                      <div className={cn(
+                        "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-transform duration-300 group-hover:scale-110",
+                        visual.bgClass
+                      )}>
+                        <ToolIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                      </div>
+                      <h3 className="font-bold text-xs sm:text-sm md:text-base text-gray-800 group-hover:text-[#00a884] transition-colors leading-snug line-clamp-2 px-1">
+                        {tool.title}
+                      </h3>
                     </Link>
-                  </motion.article>
+                  </motion.div>
                 );
               })}
             </div>

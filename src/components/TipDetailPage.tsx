@@ -99,25 +99,244 @@ export default function TipDetailPage({ settings }: TipDetailPageProps) {
   }, [slug]);
 
   React.useEffect(() => {
+    if (!tip || !contentRef.current) return;
+
+    const runEmbeddedScripts = async () => {
+      if (!contentRef.current) return;
+      const scripts = Array.from(contentRef.current.querySelectorAll('script')) as HTMLScriptElement[];
+
+      const origWrite = document.write;
+      const origWriteln = document.writeln;
+
+      // 1. Separate inline scripts and external scripts
+      const inlineScripts: HTMLScriptElement[] = [];
+      const externalScripts: HTMLScriptElement[] = [];
+
+      for (const s of scripts) {
+        if (s.dataset.executed === 'true') continue;
+        s.dataset.executed = 'true';
+        if (s.getAttribute('src')) {
+          externalScripts.push(s);
+        } else {
+          inlineScripts.push(s);
+        }
+      }
+
+      // 2. Run ALL INLINE SCRIPTS FIRST immediately (non-blocking)
+      for (const oldScript of inlineScripts) {
+        const scriptCode = oldScript.textContent || '';
+        if (scriptCode.trim()) {
+          // Attach function declarations to window so inline onclick="funcName()" works
+          const fnMatches = Array.from(scriptCode.matchAll(/function\s+([a-zA-Z0-9_$]+)\s*\(/g));
+          let windowAttachCode = '';
+          for (const match of fnMatches) {
+            const fnName = match[1];
+            if (fnName && !scriptCode.includes(`window.${fnName}`)) {
+              windowAttachCode += `\ntry { window.${fnName} = ${fnName}; } catch(e){}`;
+            }
+          }
+
+          const fullScript = scriptCode + windowAttachCode;
+
+          // Create new script tag for global window context execution
+          const newScript = document.createElement('script');
+          (Array.from(oldScript.attributes) as Attr[]).forEach(attr => {
+            newScript.setAttribute(attr.name, attr.value);
+          });
+          newScript.textContent = fullScript;
+          
+          if (oldScript.parentNode) {
+            oldScript.parentNode.insertBefore(newScript, oldScript);
+            oldScript.remove();
+          } else {
+            document.body.appendChild(newScript);
+            oldScript.remove();
+          }
+
+          // Evaluate in global scope immediately as fail-safe
+          try {
+            (0, eval)(fullScript);
+          } catch(e) {}
+        }
+      }
+
+      // 3. Process EXTERNAL SCRIPTS (Ad networks, etc.) with timeout so bad network script never hangs the page
+      for (const oldScript of externalScripts) {
+        const parent = oldScript.parentNode || contentRef.current;
+        const adContainer = document.createElement('div');
+        adContainer.className = 'ad-script-output my-3 flex justify-center max-w-full overflow-x-auto';
+        parent.insertBefore(adContainer, oldScript);
+
+        const handleWrite = (...args: any[]) => {
+          const html = args.join('');
+          if (!html) return;
+          try {
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            while (temp.firstChild) {
+              const child = temp.firstChild;
+              if (child.nodeName === 'SCRIPT') {
+                const sEl = child as HTMLScriptElement;
+                const newS = document.createElement('script');
+                if (sEl.src) {
+                  newS.src = sEl.src.startsWith('//') ? 'https:' + sEl.src : sEl.src;
+                } else {
+                  newS.textContent = sEl.textContent;
+                }
+                newS.onerror = (e: any) => {
+                  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+                };
+                adContainer.appendChild(newS);
+                temp.removeChild(child);
+              } else {
+                adContainer.appendChild(child);
+              }
+            }
+          } catch (e) {
+            console.error('Error in tip ad script write:', e);
+          }
+        };
+
+        document.write = handleWrite;
+        document.writeln = handleWrite;
+
+        const src = oldScript.getAttribute('src');
+        if (src) {
+          const finalSrc = src.startsWith('//') ? 'https:' + src : src;
+          await new Promise<void>((resolve) => {
+            const newScript = document.createElement('script');
+            (Array.from(oldScript.attributes) as Attr[]).forEach(attr => {
+              if (attr.name !== 'src') {
+                newScript.setAttribute(attr.name, attr.value);
+              }
+            });
+            newScript.src = finalSrc;
+
+            const timer = setTimeout(() => resolve(), 1500);
+
+            newScript.onload = () => { clearTimeout(timer); resolve(); };
+            newScript.onerror = () => { clearTimeout(timer); resolve(); };
+            parent.insertBefore(newScript, oldScript);
+            oldScript.remove();
+          });
+        }
+
+        document.write = origWrite;
+        document.writeln = origWriteln;
+      }
+
+      document.write = origWrite;
+      document.writeln = origWriteln;
+    };
+
+    runEmbeddedScripts();
+  }, [tip]);
+
+  React.useEffect(() => {
+    // Universal fail-safe click listener for Blogger / WordPress / custom download buttons (e.g. lsx9GenerateBtn)
+    const handleCustomButtonClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+
+      // 1. Check if user clicked a start button like .lsx9-main-btn
+      const mainBtn = target.closest('.lsx9-main-btn, [onclick*="lsx9StartArea"]') as HTMLElement | null;
+      if (mainBtn) {
+        if (typeof (window as any).lsx9StartArea === 'function') {
+          try { (window as any).lsx9StartArea(); } catch(err) {}
+        } else {
+          mainBtn.style.display = 'none';
+          const genArea = document.getElementById('lsx9GenerateArea');
+          if (genArea) genArea.style.display = 'block';
+        }
+      }
+
+      // 2. Check if user clicked a generate button like #lsx9GenerateBtn or .lsx9-action-btn
+      const genBtn = target.closest('#lsx9GenerateBtn, .lsx9-action-btn, .generate-download-btn, [data-action="generate"]') as HTMLElement | null;
+      if (genBtn && genBtn.id === 'lsx9GenerateBtn') {
+        const loader = document.getElementById('lsx9Loader');
+        const timerSpan = document.getElementById('lsx9Timer');
+        const redirectMsg = document.getElementById('redirect-id');
+        const realBtn = document.getElementById('lsx9DownloadReal') as HTMLAnchorElement | null;
+
+        // If loader is already visible or real button is already visible, don't restart
+        if (loader && loader.style.display === 'block') return;
+        if (realBtn && realBtn.style.display === 'block') return;
+
+        // Perform the generation sequence
+        genBtn.style.display = 'none';
+        if (loader) loader.style.display = 'block';
+        if (redirectMsg) redirectMsg.style.display = 'block';
+
+        let count = 5;
+        if (timerSpan) timerSpan.innerText = String(count);
+
+        const interval = setInterval(() => {
+          count--;
+          if (timerSpan) timerSpan.innerText = String(count);
+          if (count <= 0) {
+            clearInterval(interval);
+            if (loader) loader.style.display = 'none';
+            if (realBtn) {
+              realBtn.style.display = 'block';
+              const downloadUrl = realBtn.getAttribute('href') || realBtn.href;
+              if (
+                downloadUrl &&
+                downloadUrl !== '#' &&
+                !downloadUrl.startsWith('javascript:') &&
+                !downloadUrl.includes('YOUR_DOWNLOAD_LINK_HERE')
+              ) {
+                try {
+                  window.open(downloadUrl, '_blank');
+                } catch(err) {}
+              }
+            }
+          }
+        }, 1000);
+      }
+    };
+
     const handleLinkClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       const anchor = target.closest('a');
-      if (anchor && anchor.href.startsWith(window.location.origin)) {
-        const path = anchor.href.replace(window.location.origin, '');
-        if (path.startsWith('/')) {
-          e.preventDefault();
-          navigate(path);
+      if (anchor) {
+        const rawHref = anchor.getAttribute('href') || '';
+        if (
+          !rawHref ||
+          rawHref === '#' ||
+          rawHref.startsWith('#') ||
+          rawHref.startsWith('javascript:') ||
+          rawHref.startsWith('http://') ||
+          rawHref.startsWith('https://') ||
+          rawHref.includes('YOUR_DOWNLOAD_LINK_HERE') ||
+          anchor.hasAttribute('download') ||
+          anchor.hasAttribute('onclick') ||
+          anchor.getAttribute('target') === '_blank' ||
+          anchor.id === 'lsx9DownloadReal' ||
+          anchor.classList.contains('lsx9-action-btn') ||
+          anchor.hasAttribute('data-url') ||
+          anchor.hasAttribute('data-link')
+        ) {
+          return;
+        }
+
+        if (anchor.href.startsWith(window.location.origin)) {
+          const path = anchor.href.replace(window.location.origin, '');
+          if (path.startsWith('/') && !path.startsWith('/#')) {
+            e.preventDefault();
+            navigate(path);
+          }
         }
       }
     };
 
     const contentElement = contentRef.current;
     if (contentElement) {
+      contentElement.addEventListener('click', handleCustomButtonClick);
       contentElement.addEventListener('click', handleLinkClick);
     }
 
     return () => {
       if (contentElement) {
+        contentElement.removeEventListener('click', handleCustomButtonClick);
         contentElement.removeEventListener('click', handleLinkClick);
       }
     };

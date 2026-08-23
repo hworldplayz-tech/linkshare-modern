@@ -4,6 +4,27 @@ button, a {
   cursor: pointer;
 }
 
+/* Custom styles for embedded scripts, ad banners, and custom download buttons inside blog prose */
+.prose iframe {
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  border: none;
+}
+
+.prose script {
+  display: none !important;
+}
+
+.ad-script-output {
+  min-height: 50px;
+}
+
+.ad-script-output iframe {
+  display: block;
+  margin: 0 auto;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
