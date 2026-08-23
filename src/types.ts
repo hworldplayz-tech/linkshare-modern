@@ -367,5 +367,14 @@ export const TOOLS: Tool[] = [
     icon: 'Palette',
     category: 'Utility',
     enabled: true
+  },
+  {
+    id: 'iframe-generator',
+    title: 'HTML iFrame Code Generator',
+    slug: 'iframe-generator',
+    description: 'Easily generate responsive HTML iframe embed codes with live real-time preview, custom borders, dimensions, scrollbars, and security settings.',
+    icon: 'AppWindow',
+    category: 'Dev Tools',
+    enabled: true
   }
 ];

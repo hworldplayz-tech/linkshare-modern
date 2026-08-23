@@ -53,6 +53,8 @@ export const SEO_HASHTAGS = [
   { tag: '#AIStatusCaptions', label: 'AI WhatsApp Status Generator', category: 'tools' },
   { tag: '#SourceCodeViewer', label: 'Website Source Code Viewer', category: 'tools' },
   { tag: '#FreeImageEditorOnline', label: 'Image Editor Online', category: 'tools' },
+  { tag: '#IframeGenerator', label: 'HTML iFrame Code Generator', category: 'tools' },
+  { tag: '#ResponsiveIframeMaker', label: 'Responsive iFrame Embedder', category: 'tools' },
   { tag: '#TrendingWhatsAppLinks', label: 'Trending Groups', category: 'groups' },
   { tag: '#ActiveCommunityLinks', label: 'Active Communities', category: 'groups' },
   { tag: '#TechTutorials2026', label: 'Tech Tutorials', category: 'blogs' },
@@ -207,6 +209,12 @@ export const TOOL_SEO_METAS: Record<string, { titlePrefix: string; titleSuffix: 
     titleSuffix: 'No Download In-Browser Photo Studio',
     searchKeywords: 'image editor online free, photo editor browser, crop resize image, photo filters online, draw on image free, quick photo enhancer',
     description: 'Full-featured online photo editor to crop, resize, rotate, draw annotations, add text overlays, and apply color filters with instant HD PNG/JPG download.'
+  },
+  'iframe-generator': {
+    titlePrefix: 'Latest [DATE] HTML iFrame Code Generator: Create Responsive Embeds, Custom Borders & Live Preview',
+    titleSuffix: '100% Free HTML5 iFrame Maker with Security Controls',
+    searchKeywords: 'iframe generator, html iframe maker, responsive iframe generator, generate iframe code, custom iframe border, embed code generator, iframe sandbox builder 2026',
+    description: 'Easily generate responsive, customizable HTML iframe embed codes with real-time live preview, custom borders, aspect ratios, scrollbar controls, and sandbox security settings.'
   }
 };
 

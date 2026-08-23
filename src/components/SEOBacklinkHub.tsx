@@ -99,6 +99,7 @@ export const SEOBacklinkHub: React.FC<SEOBacklinkHubProps> = ({
         { label: 'Verified WhatsApp Groups Directory 2026', url: '/#groups', tag: '5,000+ Links' },
         { label: 'Latest Tech Tutorials & Step-by-Step Guides', url: '/blogs', tag: 'Updated' },
         { label: 'Website HTML/CSS/JS Source Code Viewer', url: '/tools/source-code-viewer', tag: 'Dev Inspector' },
+        { label: 'HTML iFrame Code Generator & Preview', url: '/tools/iframe-generator', tag: 'Embed Maker' },
         { label: 'Fast Clean URL Shortener with Analytics', url: '/tools/short-url-generator', tag: 'Tiny URL' },
         { label: 'WhatsApp Group Growth Strategies & Tips', url: '/tips-tricks', tag: 'Best Guides' },
         { label: 'Iran vs Israel Live Public Opinion Tracker', url: '/iran-vs-israel', tag: 'Live Votes' }

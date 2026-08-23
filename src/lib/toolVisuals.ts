@@ -19,6 +19,7 @@ import {
   MessageSquarePlus,
   Code2,
   Palette,
+  AppWindow,
   Wrench,
   LucideIcon
 } from 'lucide-react';
@@ -130,6 +131,11 @@ export const TOOL_VISUALS: Record<string, ToolVisual> = {
     icon: Palette,
     bgClass: 'bg-purple-50 text-purple-500 group-hover:bg-purple-100/90',
     textClass: 'text-purple-500',
+  },
+  'iframe-generator': {
+    icon: AppWindow,
+    bgClass: 'bg-teal-50 text-[#00a884] group-hover:bg-emerald-100/90',
+    textClass: 'text-[#00a884]',
   },
 };
 

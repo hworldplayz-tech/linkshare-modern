@@ -17,6 +17,7 @@ export const Footer = ({ settings }: FooterProps) => {
     { label: 'Custom QR Code Generator', url: '/tools/qr-code-generator' },
     { label: 'Word & Character Counter', url: '/tools/word-counter' },
     { label: 'Fast Short URL Generator', url: '/tools/short-url-generator' },
+    { label: 'HTML iFrame Code Generator', url: '/tools/iframe-generator' },
     { label: '100+ Stylish Text Generator', url: '/tools/stylish-text' },
     { label: 'Text Repeater (10k Times)', url: '/tools/text-repeater' },
     { label: 'Online PDF Editor Studio', url: '/tools/pdf-editor' }

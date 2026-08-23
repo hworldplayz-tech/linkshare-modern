@@ -130,6 +130,7 @@ import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 import { SEOHead } from './SEOHead';
 import { SEOBacklinkHub } from './SEOBacklinkHub';
+import { IframeGenerator } from './IframeGenerator';
 import { generateSoftwareSchema, getCurrentDateInfo, TOOL_SEO_METAS } from '../lib/seoHelper';
 
 interface ToolDetailProps {
@@ -5453,6 +5454,7 @@ const SourceCodeViewer = () => {
       case 'm3u-playlist-viewer': return <M3UPlaylistViewer />;
       case 'whatsapp-caption-generator': return <AICaptionGenerator />;
       case 'source-code-viewer': return <SourceCodeViewer />;
+      case 'iframe-generator': return <IframeGenerator />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -5473,6 +5475,24 @@ const SourceCodeViewer = () => {
   };
 
   const getToolContent = () => {
+    if (tool.slug === 'iframe-generator') {
+      return {
+        howToUse: [
+          "Enter or paste the target URL you wish to embed in the URL field.",
+          "Customize dimensions (width/height), scrolling behavior, and border styling.",
+          "Optionally enable fullscreen permissions, loading strategy, or sandbox controls.",
+          "Click Generate to test with the live interactive preview.",
+          "Copy the generated HTML code or responsive container snippet for your website."
+        ],
+        benefits: [
+          "100% Free HTML5 iFrame code generator with live real-time preview.",
+          "Mobile-responsive aspect ratio wrapper generator for seamless phone & tablet scaling.",
+          "Comprehensive border controls: custom thickness, hex colors, and border styles.",
+          "Browser sandbox security flags & feature policies for safe embedding.",
+          "Local history persistence to save and reload your favorite iframe configurations."
+        ]
+      };
+    }
     if (tool.slug === 'image-editor') {
       return {
         howToUse: [
