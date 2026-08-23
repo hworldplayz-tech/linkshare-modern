@@ -20,6 +20,9 @@ import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
 import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
+import { SEOHead } from './SEOHead';
+import { SEOBacklinkHub } from './SEOBacklinkHub';
+import { getCurrentDateInfo } from '../lib/seoHelper';
 
 interface BlogsPageProps {
   settings: SiteSettings;
@@ -91,8 +94,15 @@ export default function BlogsPage({ settings }: BlogsPageProps) {
     blog.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const dateInfo = getCurrentDateInfo();
+
   return (
     <div className="min-h-screen bg-white">
+      <SEOHead 
+        title={`Tech Articles, Guides & Latest WhatsApp Tutorials`}
+        description={`Read the latest tech news, practical guides, tool tutorials, and online growth strategies updated for ${dateInfo.formattedMonthYear}.`}
+        keywords="tech articles, whatsapp guides, developer tutorials, online tool guides, tech blog 2026"
+      />
       <Navbar 
         settings={settings}
         user={user}
@@ -276,6 +286,9 @@ export default function BlogsPage({ settings }: BlogsPageProps) {
           </div>
         </div>
       </section>
+
+      {/* --- SEO Authority Backlinks & 50+ Hashtag Hub --- */}
+      <SEOBacklinkHub showFullHub={true} />
 
       <Footer settings={settings} />
 

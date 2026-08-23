@@ -24,6 +24,9 @@ import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
 import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
+import { SEOHead } from './SEOHead';
+import { SEOBacklinkHub } from './SEOBacklinkHub';
+import { generateArticleSchema, getCurrentDateInfo } from '../lib/seoHelper';
 
 interface BlogDetailPageProps {
   settings: SiteSettings;
@@ -426,8 +429,21 @@ export default function BlogDetailPage({ settings }: BlogDetailPageProps) {
     );
   }
 
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : `https://linkshare.tools/blog/${blog.slug}`;
+  const articleSchema = generateArticleSchema(blog.title, blog.excerpt, currentUrl, blog.imageUrl);
+  const dateInfo = getCurrentDateInfo();
+
   return (
     <div className="min-h-screen bg-white">
+      <SEOHead 
+        title={`${blog.title} - Complete Guide & Tutorial`}
+        description={blog.excerpt || `Read ${blog.title} with updated latest steps for ${dateInfo.formattedMonthYear}.`}
+        keywords={`${blog.category.toLowerCase()}, ${blog.tags?.join(', ') || 'tech guide, tutorial'}, latest tech updates`}
+        canonicalUrl={currentUrl}
+        ogImage={blog.imageUrl}
+        ogType="article"
+        schemaJson={articleSchema}
+      />
       <Navbar 
         settings={settings}
         user={user}
@@ -624,6 +640,9 @@ export default function BlogDetailPage({ settings }: BlogDetailPageProps) {
           </div>
         </section>
       )}
+
+      {/* --- SEO Authority Backlinks & 50+ Hashtag Hub --- */}
+      <SEOBacklinkHub showFullHub={true} />
 
       <Footer settings={settings} />
 

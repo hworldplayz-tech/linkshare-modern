@@ -22,6 +22,7 @@ import ToolsPage from './components/ToolsPage';
 import ToolDetail from './components/ToolDetail';
 import RedirectPage from './components/RedirectPage';
 import { IranVsIsraelPage } from './components/IranVsIsraelPage';
+import { getCurrentDateInfo } from './lib/seoHelper';
 
 export default function App() {
   // Load initial settings from localStorage if available for instant feel
@@ -252,14 +253,20 @@ export default function App() {
     );
   }
 
-  const currentTitle = settings.siteTitle || DEFAULT_SETTINGS.siteTitle;
-  const currentDesc = settings.siteDescription || DEFAULT_SETTINGS.siteDescription;
+  const dateInfo = getCurrentDateInfo();
+  const rawTitle = settings.siteTitle || DEFAULT_SETTINGS.siteTitle;
+  const currentTitle = rawTitle.includes('Latest') 
+    ? rawTitle 
+    : `Latest ${dateInfo.formattedDayMonthYear}: ${rawTitle}`;
+  const currentDesc = `${settings.siteDescription || DEFAULT_SETTINGS.siteDescription} Updated for ${dateInfo.formattedMonthYear}.`;
 
   return (
     <>
       <Helmet>
         <title>{currentTitle}</title>
         <meta name="description" content={currentDesc} />
+        <meta name="robots" content="index, follow" />
+        <meta name="keywords" content="latest tech tools 2026, free online tools, whatsapp group links, qr code generator, ai content detector, plagiarism checker, pdf editor online, short url maker" />
         {settings.faviconUrl && <link rel="icon" href={settings.faviconUrl} />}
         
         {/* OpenGraph */}

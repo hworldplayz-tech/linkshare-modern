@@ -21,6 +21,9 @@ import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
 import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
+import { SEOHead } from './SEOHead';
+import { SEOBacklinkHub } from './SEOBacklinkHub';
+import { generateArticleSchema, getCurrentDateInfo } from '../lib/seoHelper';
 
 interface TipDetailPageProps {
   settings: SiteSettings;
@@ -360,8 +363,21 @@ export default function TipDetailPage({ settings }: TipDetailPageProps) {
     );
   }
 
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : `https://linkshare.tools/tips-tricks/${tip.slug}`;
+  const articleSchema = generateArticleSchema(tip.title, tip.excerpt, currentUrl, tip.imageUrl);
+  const dateInfo = getCurrentDateInfo();
+
   return (
     <div className="min-h-screen bg-white">
+      <SEOHead 
+        title={`${tip.title} - WhatsApp Tips & Tricks`}
+        description={tip.excerpt || `Master WhatsApp with this guide updated for ${dateInfo.formattedMonthYear}.`}
+        keywords={`${tip.category.toLowerCase()}, whatsapp trick, whatsapp tutorial, tech guide, latest tips`}
+        canonicalUrl={currentUrl}
+        ogImage={tip.imageUrl}
+        ogType="article"
+        schemaJson={articleSchema}
+      />
       <Navbar 
         settings={settings}
         user={user}
@@ -545,6 +561,9 @@ export default function TipDetailPage({ settings }: TipDetailPageProps) {
           </div>
         </div>
       </section>
+
+      {/* --- SEO Authority Backlinks & 50+ Hashtag Hub --- */}
+      <SEOBacklinkHub showFullHub={true} />
 
       <Footer settings={settings} />
 

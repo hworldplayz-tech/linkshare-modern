@@ -62,6 +62,9 @@ import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { getToolVisual } from '../lib/toolVisuals';
+import { SEOHead } from './SEOHead';
+import { SEOBacklinkHub } from './SEOBacklinkHub';
+import { getCurrentDateInfo } from '../lib/seoHelper';
 
 // --- Components ---
 
@@ -232,8 +235,29 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
 
   const featuredGroups = useMemo(() => groups.filter(g => g.isFeatured), [groups]);
 
+  const dateInfo = getCurrentDateInfo();
+
+  const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    'name': 'LinkShare Tech Tools & Groups',
+    'url': typeof window !== 'undefined' ? window.location.origin : 'https://linkshare.tools',
+    'potentialAction': {
+      '@type': 'SearchAction',
+      'target': `${typeof window !== 'undefined' ? window.location.origin : 'https://linkshare.tools'}/?q={search_term_string}`,
+      'query-input': 'required name=search_term_string'
+    },
+    'description': 'Free online developer utilities, AI content detector, QR generator, PDF tools, and verified WhatsApp group links directory.'
+  };
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-gray-800 font-sans selection:bg-[#00a884] selection:text-white">
+      <SEOHead 
+        title={`Free Tech Tools & 5,000+ Verified WhatsApp Group Links 2026`}
+        description={`Latest ${dateInfo.formattedMonthYear}: 100% Free Online Tech Tools, AI Content Checker, QR Code Maker, PDF Tools, and active WhatsApp group invite links.`}
+        keywords="latest tech tools 2026, free online tools, whatsapp group links, qr code generator, ai content detector, plagiarism checker, pdf editor online, short url maker"
+        schemaJson={websiteSchema}
+      />
       <AdPlacement id="global_top" settings={settings} />
       <Navbar 
         settings={settings}
@@ -694,6 +718,9 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
           </div>
         </div>
       </section>
+
+      {/* --- SEO Authority Backlinks & 50+ Hashtag Hub --- */}
+      <SEOBacklinkHub showFullHub={true} />
 
       <Footer settings={settings} />
 

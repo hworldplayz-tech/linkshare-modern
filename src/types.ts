@@ -81,6 +81,10 @@ export interface SiteSettings {
   pollBannerText: string;
   adPlacements: AdPlacement[];
   homepageBlogsCount?: number;
+  fifaBannerEnabled?: boolean;
+  fifaBannerText?: string;
+  fifaWatchEnabled?: boolean;
+  fifaEmbedUrl?: string;
 }
 
 export interface AdPlacement {

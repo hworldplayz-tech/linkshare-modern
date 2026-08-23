@@ -128,6 +128,9 @@ import { Footer } from './Footer';
 import { AddGroupModal } from './AddGroupModal';
 import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
+import { SEOHead } from './SEOHead';
+import { SEOBacklinkHub } from './SEOBacklinkHub';
+import { generateSoftwareSchema, getCurrentDateInfo, TOOL_SEO_METAS } from '../lib/seoHelper';
 
 interface ToolDetailProps {
   settings: SiteSettings;
@@ -5798,9 +5801,19 @@ const SourceCodeViewer = () => {
   };
 
   const toolContent = getToolContent();
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : `https://linkshare.tools/tools/${tool.slug}`;
+  const toolSchema = generateSoftwareSchema(tool.id, tool.title, tool.description, currentUrl);
 
   return (
     <div className="min-h-screen bg-gray-50/50">
+      <SEOHead 
+        toolSlug={tool.id}
+        title={tool.title}
+        description={tool.description}
+        keywords={TOOL_SEO_METAS[tool.id]?.searchKeywords}
+        canonicalUrl={currentUrl}
+        schemaJson={toolSchema}
+      />
       <Navbar 
         settings={settings}
         user={user}
@@ -5938,6 +5951,9 @@ const SourceCodeViewer = () => {
           </div>
         </div>
       </section>
+
+      {/* --- Contextual Backlink & Hashtag Network --- */}
+      <SEOBacklinkHub currentSlug={tool.slug} showFullHub={true} />
 
       <Footer settings={settings} />
 

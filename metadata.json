@@ -1,5 +1,6 @@
 {
   "name": "LinkShare - WhatsApp Group Links and Tools Hub",
   "description": "The largest WhatsApp Group Links Hub. Discover tools and promote your active WhatsApp groups and channels. Join thousands of active communities today.",
-  "requestFramePermissions": ["camera"]
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

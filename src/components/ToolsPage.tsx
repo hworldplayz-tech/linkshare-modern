@@ -30,6 +30,9 @@ import AdPlacement from './AdPlacement';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
 import { getToolVisual } from '../lib/toolVisuals';
+import { SEOHead } from './SEOHead';
+import { SEOBacklinkHub } from './SEOBacklinkHub';
+import { getCurrentDateInfo } from '../lib/seoHelper';
 
 interface ToolsPageProps {
   settings: SiteSettings;
@@ -101,8 +104,15 @@ export default function ToolsPage({ settings }: ToolsPageProps) {
     )
   );
 
+  const dateInfo = getCurrentDateInfo();
+
   return (
     <div className="min-h-screen bg-white">
+      <SEOHead 
+        title={`All 20+ Free Online Tech Tools & Utilities Suite`}
+        description={`Explore all 20+ fast, 100% free online tech tools, AI content detectors, QR code generators, PDF editors, and developers utilities updated daily for ${dateInfo.formattedMonthYear}.`}
+        keywords="free online tools, developer utilities, pdf editor, qr code generator, ai content checker, text repeater, latest web tools 2026"
+      />
       <Navbar 
         settings={settings}
         user={user}
@@ -245,6 +255,9 @@ export default function ToolsPage({ settings }: ToolsPageProps) {
           </div>
         </div>
       </section>
+
+      {/* --- SEO Authority Backlinks & 50+ Hashtag Hub --- */}
+      <SEOBacklinkHub showFullHub={true} />
 
       <Footer settings={settings} />
 
