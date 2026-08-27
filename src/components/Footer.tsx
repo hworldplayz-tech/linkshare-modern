@@ -12,6 +12,7 @@ export const Footer = ({ settings }: FooterProps) => {
   const dateInfo = getCurrentDateInfo();
 
   const POPULAR_TOOLS_LINKS = [
+    { label: 'Image Compressor & Resizer Pro', url: '/tools/image-compressor' },
     { label: 'TikTok Video Downloader HD', url: '/tools/tiktok-downloader' },
     { label: 'Free AI Content Detector', url: '/tools/ai-detector' },
     { label: 'Online Plagiarism Checker', url: '/tools/plagiarism-checker' },
@@ -19,7 +20,6 @@ export const Footer = ({ settings }: FooterProps) => {
     { label: 'Word & Character Counter', url: '/tools/word-counter' },
     { label: 'Fast Short URL Generator', url: '/tools/short-url-generator' },
     { label: 'HTML iFrame Code Generator', url: '/tools/iframe-generator' },
-    { label: '100+ Stylish Text Generator', url: '/tools/stylish-text' },
     { label: 'Online PDF Editor Studio', url: '/tools/pdf-editor' }
   ];
 

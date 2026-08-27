@@ -59,7 +59,7 @@ export const matchToolCategory = (tool: Tool, catId: string): boolean => {
             'whatsapp-group-name-generator', 'whatsapp-status-formatter'].includes(tool.id);
   }
   if (catId === 'pdf') {
-    return tool.category === 'Document' || ['pdf-editor', 'image-pdf-merger'].includes(tool.id);
+    return tool.category === 'Document' || ['pdf-editor', 'image-pdf-merger', 'image-compressor'].includes(tool.id);
   }
   if (catId === 'ai') {
     return tool.category === 'AI Tools' || ['ai-detector', 'whatsapp-caption-generator', 'plagiarism-checker'].includes(tool.id);
@@ -69,7 +69,7 @@ export const matchToolCategory = (tool: Tool, catId: string): boolean => {
   }
   if (catId === 'utility') {
     return tool.category === 'Utility' || tool.category === 'Content' || 
-           ['qr-code-generator', 'qr-scanner', 'image-editor', 'm3u-playlist-viewer', 'word-counter', 'plagiarism-checker'].includes(tool.id);
+           ['qr-code-generator', 'qr-scanner', 'image-editor', 'image-compressor', 'm3u-playlist-viewer', 'word-counter', 'plagiarism-checker'].includes(tool.id);
   }
   return true;
 };

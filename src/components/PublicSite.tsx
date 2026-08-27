@@ -362,10 +362,10 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
               const count = TOOLS.filter(t => t.enabled && (
                 cat.id === 'all' ? true :
                 cat.id === 'social' ? (t.category === 'Social' || ['tiktok-downloader', 'stylish-text', 'text-repeater', 'fake-whatsapp-screenshot', 'whatsapp-read-more', 'whatsapp-link-generator', 'whatsapp-dp-border', 'whatsapp-group-name-generator', 'whatsapp-status-formatter'].includes(t.id)) :
-                cat.id === 'pdf' ? (t.category === 'Document' || ['pdf-editor', 'image-pdf-merger'].includes(t.id)) :
+                cat.id === 'pdf' ? (t.category === 'Document' || ['pdf-editor', 'image-pdf-merger', 'image-compressor'].includes(t.id)) :
                 cat.id === 'ai' ? (t.category === 'AI Tools' || ['ai-detector', 'whatsapp-caption-generator', 'plagiarism-checker'].includes(t.id)) :
                 cat.id === 'dev' ? (t.category === 'Dev Tools' || ['iframe-generator', 'source-code-viewer', 'short-url-generator'].includes(t.id)) :
-                (t.category === 'Utility' || t.category === 'Content' || ['qr-code-generator', 'qr-scanner', 'image-editor', 'm3u-playlist-viewer', 'word-counter'].includes(t.id))
+                (t.category === 'Utility' || t.category === 'Content' || ['qr-code-generator', 'qr-scanner', 'image-editor', 'image-compressor', 'm3u-playlist-viewer', 'word-counter'].includes(t.id))
               )).length;
 
               return (
@@ -396,10 +396,10 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
               if (!t.enabled) return false;
               if (toolCategory === 'all') return true;
               if (toolCategory === 'social') return t.category === 'Social' || ['tiktok-downloader', 'stylish-text', 'text-repeater', 'fake-whatsapp-screenshot', 'whatsapp-read-more', 'whatsapp-link-generator', 'whatsapp-dp-border', 'whatsapp-group-name-generator', 'whatsapp-status-formatter'].includes(t.id);
-              if (toolCategory === 'pdf') return t.category === 'Document' || ['pdf-editor', 'image-pdf-merger'].includes(t.id);
+              if (toolCategory === 'pdf') return t.category === 'Document' || ['pdf-editor', 'image-pdf-merger', 'image-compressor'].includes(t.id);
               if (toolCategory === 'ai') return t.category === 'AI Tools' || ['ai-detector', 'whatsapp-caption-generator', 'plagiarism-checker'].includes(t.id);
               if (toolCategory === 'dev') return t.category === 'Dev Tools' || ['iframe-generator', 'source-code-viewer', 'short-url-generator'].includes(t.id);
-              if (toolCategory === 'utility') return t.category === 'Utility' || t.category === 'Content' || ['qr-code-generator', 'qr-scanner', 'image-editor', 'm3u-playlist-viewer', 'word-counter'].includes(t.id);
+              if (toolCategory === 'utility') return t.category === 'Utility' || t.category === 'Content' || ['qr-code-generator', 'qr-scanner', 'image-editor', 'image-compressor', 'm3u-playlist-viewer', 'word-counter'].includes(t.id);
               return true;
             }).map((tool) => {
               const visual = getToolVisual(tool.id);

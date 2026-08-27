@@ -132,6 +132,7 @@ import { SEOHead } from './SEOHead';
 import { SEOBacklinkHub } from './SEOBacklinkHub';
 import { IframeGenerator } from './IframeGenerator';
 import { TikTokDownloader } from './TikTokDownloader';
+import { ImageCompressor } from './ImageCompressor';
 import { generateSoftwareSchema, getCurrentDateInfo, TOOL_SEO_METAS } from '../lib/seoHelper';
 
 interface ToolDetailProps {
@@ -5457,6 +5458,7 @@ const SourceCodeViewer = () => {
       case 'source-code-viewer': return <SourceCodeViewer />;
       case 'iframe-generator': return <IframeGenerator />;
       case 'tiktok-downloader': return <TikTokDownloader />;
+      case 'image-compressor': return <ImageCompressor />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -5477,6 +5479,24 @@ const SourceCodeViewer = () => {
   };
 
   const getToolContent = () => {
+    if (tool.slug === 'image-compressor') {
+      return {
+        howToUse: [
+          "Upload single or multiple images (JPG, PNG, WebP, GIF) via drag-and-drop or file selector.",
+          "Inspect real-time Before & After compression clarity using the interactive split comparison slider.",
+          "Tune compression parameters: adjust the Quality slider or pick 'Target KB Pro' to compress under 50KB/100KB for visa/government portal upload requirements.",
+          "Optionally resize dimensions (custom px, %, or social presets) or convert to WebP/JPG/PNG.",
+          "Download individual optimized images directly or click 'Save All' to export everything in a single ZIP file."
+        ],
+        benefits: [
+          "100% Client-Side In-Browser Processing: Your private photos and documents are never uploaded to any remote server.",
+          "Interactive Live Split Comparison: Swipe between original and compressed images to inspect sharpness and clarity before saving.",
+          "Target Size Pro Mode: Automatically calculates the optimal quality and resolution to meet strict file size limits (50KB, 100KB, 200KB).",
+          "Batch Processing & ZIP Download: Compress dozens of images simultaneously and download them in a single archive.",
+          "Privacy & Optimization Extras: One-click EXIF metadata stripping and 100% vibrant color preservation with zero loss."
+        ]
+      };
+    }
     if (tool.slug === 'tiktok-downloader') {
       return {
         howToUse: [

@@ -223,6 +223,12 @@ export const TOOL_SEO_METAS: Record<string, { titlePrefix: string; titleSuffix: 
     titleSuffix: 'Save TikTok Videos, Sounds & Photos on Android, iPhone, PC',
     searchKeywords: 'tiktok video downloader, download tiktok without watermark, tiktok no watermark, save tiktok mp4, tiktok mp3 download, tiktok photo downloader, snaptik alternative, sss tiktok download free',
     description: 'Download TikTok videos in HD quality without watermark for free. Fast online TikTok to MP4 converter, MP3 audio extractor, and photo slideshow saver with direct 1-click download.'
+  },
+  'image-compressor': {
+    titlePrefix: 'Latest [DATE] Image Compressor & Resizer Pro: Batch Compress JPG, PNG, WebP with Split Slider',
+    titleSuffix: 'Target KB Pro, Zero Loss In-Browser Shrinker & ZIP Export',
+    searchKeywords: 'image compressor, compress image under 100kb, compress image 50kb, bulk image resizer, webp converter, passport photo compressor, shrink photo size, online photo compressor without losing quality, batch image zip',
+    description: 'Batch compress and resize JPG, PNG, WebP images online with real-time before/after split slider, target KB limits (50KB/100KB for visa/forms), dimensions resizer, EXIF cleaner, and 100% private browser processing.'
   }
 };
 

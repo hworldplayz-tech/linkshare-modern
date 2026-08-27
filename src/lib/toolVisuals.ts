@@ -22,6 +22,7 @@ import {
   AppWindow,
   Wrench,
   Video,
+  Minimize2,
   LucideIcon
 } from 'lucide-react';
 
@@ -142,6 +143,11 @@ export const TOOL_VISUALS: Record<string, ToolVisual> = {
     icon: Video,
     bgClass: 'bg-pink-50 text-pink-600 group-hover:bg-pink-100/90',
     textClass: 'text-pink-600',
+  },
+  'image-compressor': {
+    icon: Minimize2,
+    bgClass: 'bg-emerald-50 text-[#00a884] group-hover:bg-emerald-100/90',
+    textClass: 'text-[#00a884]',
   },
 };
 

@@ -386,5 +386,14 @@ export const TOOLS: Tool[] = [
     icon: 'Video',
     category: 'Social',
     enabled: true
+  },
+  {
+    id: 'image-compressor',
+    title: 'Image Compressor & Resizer Pro',
+    slug: 'image-compressor',
+    description: 'Batch compress, resize, and convert JPG, PNG, WebP images with interactive before/after split slider, target KB limits, and zero quality loss.',
+    icon: 'Minimize2',
+    category: 'Utility',
+    enabled: true
   }
 ];
