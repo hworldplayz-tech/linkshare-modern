@@ -74,6 +74,7 @@ export const SEOBacklinkHub: React.FC<SEOBacklinkHubProps> = ({
     {
       category: 'Media, PDF & QR Codes',
       links: [
+        { label: 'TikTok Video Downloader Without Watermark HD', url: '/tools/tiktok-downloader', tag: 'Fast MP4/MP3' },
         { label: 'Custom Colored QR Code Generator with Logo', url: '/tools/qr-code-generator', tag: 'HD PNG' },
         { label: 'Instant Camera & Image QR Code Scanner', url: '/tools/qr-scanner', tag: 'Browser' },
         { label: 'Free Online PDF Editor & Signature Annotator', url: '/tools/pdf-editor', tag: 'No Watermark' },

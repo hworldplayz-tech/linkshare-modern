@@ -35,7 +35,8 @@ import {
   Eye,
   Sparkles,
   List,
-  Share2
+  Share2,
+  Wrench
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { 
@@ -109,6 +110,7 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCountry, setSelectedCountry] = useState('All');
   const [selectedType, setSelectedType] = useState<'all' | 'group' | 'channel'>('all');
+  const [toolCategory, setToolCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(settings.defaultView || 'grid');
   const [visibleCount, setVisibleCount] = useState(settings.groupsPerPage || 20);
 
@@ -322,9 +324,122 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
       {/* --- Poll Banner --- */}
       <PollBanner settings={settings} />
 
+      {/* --- Tools Section (Categorized) --- */}
+      <section id="tools" className="py-16 md:py-20 bg-white border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#00a884]/10 text-[#00a884] rounded-full text-xs font-bold mb-3">
+                <Wrench className="w-3.5 h-3.5" />
+                <span>Productivity & Utilities Suite</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight">
+                Explore Free Online Tools
+              </h2>
+              <p className="text-gray-500 text-sm sm:text-base mt-1 max-w-2xl">
+                Fast, secure browser utilities — from TikTok HD downloads and PDF editing to AI checkers and developer tools.
+              </p>
+            </div>
+            <Link 
+              to="/tools" 
+              className="inline-flex items-center gap-2 text-[#00a884] font-bold text-sm hover:underline shrink-0"
+            >
+              View All {TOOLS.filter(t => t.enabled).length} Tools <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Category Quick Filter Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 pt-1 scrollbar-none mb-8 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap">
+            {[
+              { id: 'all', label: 'All Tools' },
+              { id: 'social', label: 'Social & Video' },
+              { id: 'pdf', label: 'PDF & Docs' },
+              { id: 'ai', label: 'AI Tools' },
+              { id: 'dev', label: 'Dev & Web' },
+              { id: 'utility', label: 'Utility & Media' },
+            ].map((cat) => {
+              const isActive = toolCategory === cat.id;
+              const count = TOOLS.filter(t => t.enabled && (
+                cat.id === 'all' ? true :
+                cat.id === 'social' ? (t.category === 'Social' || ['tiktok-downloader', 'stylish-text', 'text-repeater', 'fake-whatsapp-screenshot', 'whatsapp-read-more', 'whatsapp-link-generator', 'whatsapp-dp-border', 'whatsapp-group-name-generator', 'whatsapp-status-formatter'].includes(t.id)) :
+                cat.id === 'pdf' ? (t.category === 'Document' || ['pdf-editor', 'image-pdf-merger'].includes(t.id)) :
+                cat.id === 'ai' ? (t.category === 'AI Tools' || ['ai-detector', 'whatsapp-caption-generator', 'plagiarism-checker'].includes(t.id)) :
+                cat.id === 'dev' ? (t.category === 'Dev Tools' || ['iframe-generator', 'source-code-viewer', 'short-url-generator'].includes(t.id)) :
+                (t.category === 'Utility' || t.category === 'Content' || ['qr-code-generator', 'qr-scanner', 'image-editor', 'm3u-playlist-viewer', 'word-counter'].includes(t.id))
+              )).length;
+
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setToolCategory(cat.id)}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 border flex items-center gap-1.5",
+                    isActive
+                      ? "bg-[#00a884] text-white border-[#00a884] shadow-xs scale-102"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-[#00a884]/40 hover:bg-gray-50"
+                  )}
+                >
+                  <span>{cat.label}</span>
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.2 rounded-full font-bold",
+                    isActive ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                  )}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5">
+            {TOOLS.filter(t => {
+              if (!t.enabled) return false;
+              if (toolCategory === 'all') return true;
+              if (toolCategory === 'social') return t.category === 'Social' || ['tiktok-downloader', 'stylish-text', 'text-repeater', 'fake-whatsapp-screenshot', 'whatsapp-read-more', 'whatsapp-link-generator', 'whatsapp-dp-border', 'whatsapp-group-name-generator', 'whatsapp-status-formatter'].includes(t.id);
+              if (toolCategory === 'pdf') return t.category === 'Document' || ['pdf-editor', 'image-pdf-merger'].includes(t.id);
+              if (toolCategory === 'ai') return t.category === 'AI Tools' || ['ai-detector', 'whatsapp-caption-generator', 'plagiarism-checker'].includes(t.id);
+              if (toolCategory === 'dev') return t.category === 'Dev Tools' || ['iframe-generator', 'source-code-viewer', 'short-url-generator'].includes(t.id);
+              if (toolCategory === 'utility') return t.category === 'Utility' || t.category === 'Content' || ['qr-code-generator', 'qr-scanner', 'image-editor', 'm3u-playlist-viewer', 'word-counter'].includes(t.id);
+              return true;
+            }).map((tool) => {
+              const visual = getToolVisual(tool.id);
+              const ToolIcon = visual.icon;
+
+              return (
+                <div 
+                  key={tool.id} 
+                  className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center text-center cursor-pointer shadow-xs hover:shadow-xl hover:-translate-y-1.5 hover:border-[#00a884]/40 transition-all duration-300 group min-h-[140px] sm:min-h-[160px] md:min-h-[180px] relative overflow-hidden"
+                  onClick={() => navigate(`/tools/${tool.slug}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      navigate(`/tools/${tool.slug}`);
+                    }
+                  }}
+                >
+                  <span className="absolute top-2.5 right-2.5 text-[8px] sm:text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 group-hover:bg-[#00a884]/10 group-hover:text-[#00a884] transition-colors">
+                    {tool.category}
+                  </span>
+                  <div className={cn(
+                    "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-transform duration-300 group-hover:scale-110 shadow-xs",
+                    visual.bgClass
+                  )}>
+                    <ToolIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
+                  </div>
+                  <h3 className="font-bold text-xs sm:text-sm md:text-base text-gray-800 group-hover:text-[#00a884] transition-colors leading-snug line-clamp-2 px-1">
+                    {tool.title}
+                  </h3>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* --- Latest Blog Posts --- */}
       {latestBlogs.length > 0 && (
-        <section className="py-16 bg-white border-b border-gray-100">
+        <section className="py-16 bg-gray-50/50 border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
               <div>
@@ -397,7 +512,7 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
 
       {/* --- Featured Groups --- */}
       {featuredGroups.length > 0 && (
-        <section className="py-12 bg-white border-y border-gray-100">
+        <section className="py-12 bg-white border-b border-gray-100">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -443,52 +558,6 @@ export default function PublicSite({ settings }: { settings: SiteSettings }) {
           </div>
         </section>
       )}
-
-      {/* --- Tools Grid --- */}
-      <section id="tools" className="py-16 md:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-10 md:mb-14">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-[#008f6f] mb-3 tracking-tight">
-              Explore Our Tools
-            </h2>
-            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
-              Free online tools to boost your productivity and enhance your content.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5 sm:gap-4 md:gap-5">
-            {TOOLS.filter(t => t.enabled).map((tool) => {
-              const visual = getToolVisual(tool.id);
-              const ToolIcon = visual.icon;
-
-              return (
-                <div 
-                  key={tool.id} 
-                  className="bg-white rounded-2xl sm:rounded-3xl border border-gray-100 p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center text-center cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1.5 hover:border-[#00a884]/40 transition-all duration-300 group min-h-[140px] sm:min-h-[160px] md:min-h-[180px]"
-                  onClick={() => navigate(`/tools/${tool.slug}`)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      navigate(`/tools/${tool.slug}`);
-                    }
-                  }}
-                >
-                  <div className={cn(
-                    "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center mb-3 sm:mb-4 transition-transform duration-300 group-hover:scale-110",
-                    visual.bgClass
-                  )}>
-                    <ToolIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
-                  </div>
-                  <h3 className="font-bold text-xs sm:text-sm md:text-base text-gray-800 group-hover:text-[#00a884] transition-colors leading-snug line-clamp-2 px-1">
-                    {tool.title}
-                  </h3>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* --- Browse Groups --- */}
       <section id="groups" className="py-20 bg-gray-50">

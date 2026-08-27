@@ -126,6 +126,269 @@ app.post('/api/fetch-source', async (req, res) => {
   }
 });
 
+// API endpoint to fetch TikTok video info without watermark
+app.post('/api/tiktok-info', async (req, res) => {
+  let { url } = req.body;
+  if (!url || typeof url !== 'string') {
+    return res.status(400).json({ error: 'Please provide a valid TikTok video URL' });
+  }
+
+  url = url.trim();
+
+  // Validate TikTok URL format
+  if (!url.includes('tiktok.com')) {
+    return res.status(400).json({ error: 'Please enter a valid TikTok link (e.g. tiktok.com/@user/video/... or vm.tiktok.com/...)' });
+  }
+
+  console.log(`[TikTok API] Fetching info for: ${url}`);
+
+  // Provider 1: TikWM (Primary API)
+  try {
+    const response = await axios.post(
+      'https://www.tikwm.com/api/',
+      new URLSearchParams({ url, hd: '1' }).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Accept': 'application/json, text/javascript, */*; q=0.01',
+          'Referer': 'https://www.tikwm.com/',
+        },
+        timeout: 12000,
+      }
+    );
+
+    if (response.data && (response.data.code === 0 || response.data.data)) {
+      const data = response.data.data;
+      const playRaw = data.play || '';
+      const hdPlayRaw = data.hdplay || '';
+      const wmPlayRaw = data.wmplay || '';
+      const musicRaw = data.music || data.music_info?.play || '';
+
+      const playUrl = playRaw ? (playRaw.startsWith('http') ? playRaw : `https://www.tikwm.com${playRaw}`) : '';
+      const hdPlayUrl = hdPlayRaw ? (hdPlayRaw.startsWith('http') ? hdPlayRaw : `https://www.tikwm.com${hdPlayRaw}`) : playUrl;
+      const wmPlayUrl = wmPlayRaw ? (wmPlayRaw.startsWith('http') ? wmPlayRaw : `https://www.tikwm.com${wmPlayRaw}`) : '';
+      const musicUrl = musicRaw ? (musicRaw.startsWith('http') ? musicRaw : `https://www.tikwm.com${musicRaw}`) : '';
+
+      const result = {
+        id: String(data.id || Date.now()),
+        title: data.title || 'TikTok Video',
+        duration: Number(data.duration) || 0,
+        cover: data.cover ? (data.cover.startsWith('http') ? data.cover : `https://www.tikwm.com${data.cover}`) : '',
+        originCover: data.origin_cover ? (data.origin_cover.startsWith('http') ? data.origin_cover : `https://www.tikwm.com${data.origin_cover}`) : '',
+        // Clean video URLs (MP4)
+        playUrl: playUrl,
+        hdPlayUrl: hdPlayUrl,
+        wmPlayUrl: wmPlayUrl,
+        // Audio (MP3)
+        musicUrl: musicUrl,
+        musicInfo: {
+          title: data.music_info?.title || 'Original Sound',
+          author: data.music_info?.author || data.author?.nickname || 'TikTok Creator',
+          play: musicUrl,
+          duration: Number(data.music_info?.duration || data.duration) || 0,
+        },
+        // Author info
+        author: {
+          id: String(data.author?.id || ''),
+          username: data.author?.unique_id || 'tiktok_user',
+          nickname: data.author?.nickname || 'TikTok Creator',
+          avatar: data.author?.avatar ? (data.author.avatar.startsWith('http') ? data.author.avatar : `https://www.tikwm.com${data.author.avatar}`) : '',
+        },
+        // Stats
+        stats: {
+          plays: Number(data.play_count) || 0,
+          likes: Number(data.digg_count) || 0,
+          comments: Number(data.comment_count) || 0,
+          shares: Number(data.share_count) || 0,
+          downloads: Number(data.download_count) || 0,
+        },
+        // Images / Slides
+        images: Array.isArray(data.images) ? data.images.map((img: string) => img.startsWith('http') ? img : `https://www.tikwm.com${img}`) : [],
+        type: (Array.isArray(data.images) && data.images.length > 0) ? 'image' : 'video',
+      };
+
+      return res.json({ success: true, data: result });
+    }
+  } catch (err: any) {
+    console.warn('[TikTok API] TikWM Post failed, trying fallback endpoints:', err.message);
+  }
+
+  // Provider 2: TikWM GET Endpoint Fallback
+  try {
+    const getRes = await axios.get(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}&hd=1`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Referer': 'https://www.tikwm.com/',
+      },
+      timeout: 10000,
+    });
+
+    if (getRes.data && getRes.data.data) {
+      const data = getRes.data.data;
+      const playRaw = data.play || '';
+      const hdPlayRaw = data.hdplay || '';
+      const musicRaw = data.music || data.music_info?.play || '';
+
+      const playUrl = playRaw ? (playRaw.startsWith('http') ? playRaw : `https://www.tikwm.com${playRaw}`) : '';
+      const hdPlayUrl = hdPlayRaw ? (hdPlayRaw.startsWith('http') ? hdPlayRaw : `https://www.tikwm.com${hdPlayRaw}`) : playUrl;
+      const musicUrl = musicRaw ? (musicRaw.startsWith('http') ? musicRaw : `https://www.tikwm.com${musicRaw}`) : '';
+
+      const result = {
+        id: String(data.id || Date.now()),
+        title: data.title || 'TikTok Video',
+        duration: Number(data.duration) || 0,
+        cover: data.cover ? (data.cover.startsWith('http') ? data.cover : `https://www.tikwm.com${data.cover}`) : '',
+        originCover: data.origin_cover ? (data.origin_cover.startsWith('http') ? data.origin_cover : `https://www.tikwm.com${data.origin_cover}`) : '',
+        playUrl: playUrl,
+        hdPlayUrl: hdPlayUrl,
+        wmPlayUrl: data.wmplay ? (data.wmplay.startsWith('http') ? data.wmplay : `https://www.tikwm.com${data.wmplay}`) : '',
+        musicUrl: musicUrl,
+        musicInfo: {
+          title: data.music_info?.title || 'Original Sound',
+          author: data.music_info?.author || data.author?.nickname || 'TikTok Creator',
+          play: musicUrl,
+          duration: Number(data.music_info?.duration || data.duration) || 0,
+        },
+        author: {
+          id: String(data.author?.id || ''),
+          username: data.author?.unique_id || 'tiktok_user',
+          nickname: data.author?.nickname || 'TikTok Creator',
+          avatar: data.author?.avatar ? (data.author.avatar.startsWith('http') ? data.author.avatar : `https://www.tikwm.com${data.author.avatar}`) : '',
+        },
+        stats: {
+          plays: Number(data.play_count) || 0,
+          likes: Number(data.digg_count) || 0,
+          comments: Number(data.comment_count) || 0,
+          shares: Number(data.share_count) || 0,
+          downloads: Number(data.download_count) || 0,
+        },
+        images: Array.isArray(data.images) ? data.images.map((img: string) => img.startsWith('http') ? img : `https://www.tikwm.com${img}`) : [],
+        type: (Array.isArray(data.images) && data.images.length > 0) ? 'image' : 'video',
+      };
+      return res.json({ success: true, data: result });
+    }
+  } catch (err: any) {
+    console.warn('[TikTok API] TikWM GET fallback failed:', err.message);
+  }
+
+  // Provider 3: SSSTik Public API Fallback
+  try {
+    const sssRes = await axios.post(
+      'https://ssstik.io/abc?url=dl',
+      new URLSearchParams({ id: url, locale: 'en', tt: '0' }).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Referer': 'https://ssstik.io/en',
+        },
+        timeout: 10000,
+      }
+    );
+
+    if (sssRes.data && typeof sssRes.data === 'string') {
+      const $ = cheerio.load(sssRes.data);
+      const playUrl = $('a.download_link.without_watermark').attr('href') || $('a.without_watermark').attr('href') || '';
+      const hdPlayUrl = $('a.download_link.without_watermark_direct').attr('href') || playUrl;
+      const musicUrl = $('a.download_link.music').attr('href') || '';
+      const title = $('p.maintext').text().trim() || 'TikTok Video';
+      const avatar = $('img.result_author').attr('src') || '';
+      const nickname = $('h2').text().trim() || 'TikTok Creator';
+
+      if (playUrl) {
+        const result = {
+          id: String(Date.now()),
+          title: title,
+          duration: 0,
+          cover: avatar,
+          originCover: avatar,
+          playUrl: playUrl,
+          hdPlayUrl: hdPlayUrl || playUrl,
+          wmPlayUrl: '',
+          musicUrl: musicUrl,
+          musicInfo: {
+            title: 'Original Sound',
+            author: nickname,
+            play: musicUrl,
+            duration: 0,
+          },
+          author: {
+            id: '',
+            username: 'tiktok_user',
+            nickname: nickname,
+            avatar: avatar,
+          },
+          stats: { plays: 0, likes: 0, comments: 0, shares: 0, downloads: 0 },
+          images: [],
+          type: 'video',
+        };
+        return res.json({ success: true, data: result });
+      }
+    }
+  } catch (err: any) {
+    console.warn('[TikTok API] SSSTik fallback failed:', err.message);
+  }
+
+  return res.status(404).json({
+    error: 'Could not fetch video. Please make sure the TikTok link is public, accessible, and not deleted.',
+  });
+});
+
+// Proxy streaming download endpoint with robust header handling
+app.get('/api/tiktok-proxy', async (req, res) => {
+  const mediaUrl = req.query.url as string;
+  let filename = (req.query.filename as string) || 'tiktok_no_watermark.mp4';
+
+  if (!mediaUrl) {
+    return res.status(400).send('Missing media url parameter');
+  }
+
+  // Clean filename for safety and ensure correct extension
+  filename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const isAudio = filename.toLowerCase().endsWith('.mp3');
+  const isImage = filename.toLowerCase().endsWith('.jpg') || filename.toLowerCase().endsWith('.jpeg') || filename.toLowerCase().endsWith('.png');
+  const isVideo = !isAudio && !isImage;
+
+  if (isVideo && !filename.toLowerCase().endsWith('.mp4')) {
+    filename += '.mp4';
+  }
+
+  try {
+    const response = await axios({
+      method: 'GET',
+      url: mediaUrl,
+      responseType: 'stream',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Referer': 'https://www.tikwm.com/',
+        'Accept': '*/*',
+      },
+      timeout: 30000,
+    });
+
+    const contentType = isAudio 
+      ? 'audio/mpeg' 
+      : isImage 
+      ? 'image/jpeg' 
+      : 'video/mp4';
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
+    }
+
+    response.data.pipe(res);
+  } catch (err: any) {
+    console.error('[TikTok Proxy Error]:', err.message);
+    // If proxy stream fails, redirect directly to media URL
+    res.redirect(mediaUrl);
+  }
+});
+
 export default app;
 
 async function startServer() {

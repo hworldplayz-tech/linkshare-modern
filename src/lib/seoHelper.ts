@@ -82,6 +82,8 @@ export const SEO_HASHTAGS = [
   { tag: '#MobileResponsiveTools', label: 'Mobile Responsive Tools', category: 'tools' },
   { tag: '#HighAccuracyAIDetector', label: 'High Accuracy AI Detector', category: 'tools' },
   { tag: '#BatchImageEditor', label: 'Online Image Editor', category: 'tools' },
+  { tag: '#TikTokDownloader', label: 'TikTok Video Downloader', category: 'tools' },
+  { tag: '#TikTokNoWatermark', label: 'TikTok Without Watermark', category: 'tools' },
   { tag: '#DailyUpdatedTools', label: 'Daily Updated Tools', category: 'tools' },
   { tag: '#BestFreeTechUtilities', label: 'Best Free Tech Utilities', category: 'tools' },
   { tag: '#TopRankedWebTools', label: 'Top Ranked Web Tools', category: 'tools' },
@@ -215,6 +217,12 @@ export const TOOL_SEO_METAS: Record<string, { titlePrefix: string; titleSuffix: 
     titleSuffix: '100% Free HTML5 iFrame Maker with Security Controls',
     searchKeywords: 'iframe generator, html iframe maker, responsive iframe generator, generate iframe code, custom iframe border, embed code generator, iframe sandbox builder 2026',
     description: 'Easily generate responsive, customizable HTML iframe embed codes with real-time live preview, custom borders, aspect ratios, scrollbar controls, and sandbox security settings.'
+  },
+  'tiktok-downloader': {
+    titlePrefix: 'Latest [DATE] TikTok Video Downloader: 100% Free HD MP4 & MP3 Download Without Watermark',
+    titleSuffix: 'Save TikTok Videos, Sounds & Photos on Android, iPhone, PC',
+    searchKeywords: 'tiktok video downloader, download tiktok without watermark, tiktok no watermark, save tiktok mp4, tiktok mp3 download, tiktok photo downloader, snaptik alternative, sss tiktok download free',
+    description: 'Download TikTok videos in HD quality without watermark for free. Fast online TikTok to MP4 converter, MP3 audio extractor, and photo slideshow saver with direct 1-click download.'
   }
 };
 

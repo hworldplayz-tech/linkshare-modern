@@ -127,12 +127,13 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   faviconUrl: '/favicon.png',
   headerMenus: [
     { id: '1', label: 'Home', href: '/' },
-    { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
+    { id: '4', label: 'Free Tools', href: '/tools' },
     { id: 'blogs', label: 'Blogs', href: '/blogs' },
+    { id: '3', label: 'Browse Groups', href: '/#groups' },
+    { id: 'tips', label: 'Tips & Tricks', href: '/tips-tricks' },
+    { id: 'poll', label: 'Iran vs Israel', href: '/iran-vs-israel' },
     { id: '2', label: 'About', href: '/about' },
     { id: '5', label: 'Contact', href: '/contact' },
-    { id: '3', label: 'Browse Groups', href: '#groups' },
-    { id: '4', label: 'Tools', href: '/tools' },
   ],
   heroShow: true,
   heroTitle: 'Discover Tools and Promote Your WhatsApp Groups',
@@ -375,6 +376,15 @@ export const TOOLS: Tool[] = [
     description: 'Easily generate responsive HTML iframe embed codes with live real-time preview, custom borders, dimensions, scrollbars, and security settings.',
     icon: 'AppWindow',
     category: 'Dev Tools',
+    enabled: true
+  },
+  {
+    id: 'tiktok-downloader',
+    title: 'TikTok Video Downloader (No Watermark)',
+    slug: 'tiktok-downloader',
+    description: 'Download TikTok videos in HD quality without watermark. Save MP4 videos, MP3 audio, and photo slideshows for free on Android, iPhone & PC.',
+    icon: 'Video',
+    category: 'Social',
     enabled: true
   }
 ];

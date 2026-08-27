@@ -131,6 +131,7 @@ import { Button } from './ui/Button';
 import { SEOHead } from './SEOHead';
 import { SEOBacklinkHub } from './SEOBacklinkHub';
 import { IframeGenerator } from './IframeGenerator';
+import { TikTokDownloader } from './TikTokDownloader';
 import { generateSoftwareSchema, getCurrentDateInfo, TOOL_SEO_METAS } from '../lib/seoHelper';
 
 interface ToolDetailProps {
@@ -5455,6 +5456,7 @@ const SourceCodeViewer = () => {
       case 'whatsapp-caption-generator': return <AICaptionGenerator />;
       case 'source-code-viewer': return <SourceCodeViewer />;
       case 'iframe-generator': return <IframeGenerator />;
+      case 'tiktok-downloader': return <TikTokDownloader />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -5475,6 +5477,23 @@ const SourceCodeViewer = () => {
   };
 
   const getToolContent = () => {
+    if (tool.slug === 'tiktok-downloader') {
+      return {
+        howToUse: [
+          "Open TikTok and copy the share link of the video or photo slideshow you want to download.",
+          "Paste the TikTok link into the input box above and click 'Download'.",
+          "Preview the video, caption, creator information, and audio track.",
+          "Click 'Download Without Watermark (HD)' to save the clean MP4 video, or choose 'Download MP3' for the sound."
+        ],
+        benefits: [
+          "100% Free & Unlimited TikTok downloads with no watermark or logo.",
+          "HD 1080p/720p crystal-clear MP4 video export with direct browser saving.",
+          "Extract background music tracks and viral sounds in high quality MP3 format.",
+          "Full support for TikTok photo slide carousels with single-click batch downloads.",
+          "Works seamlessly across Android, iPhone/iPad, Windows PC, and Mac without installing third-party apps."
+        ]
+      };
+    }
     if (tool.slug === 'iframe-generator') {
       return {
         howToUse: [
