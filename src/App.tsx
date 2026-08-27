@@ -225,17 +225,16 @@ export default function App() {
     };
   }, []);
 
-  // Auto-seed default blogs if empty on startup
+  // Auto-seed default blogs if missing on startup
   useEffect(() => {
     const seedBlogs = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, 'blogs'));
-        if (querySnapshot.empty) {
-          console.log('Seeding default blogs...');
-          for (const blog of DEFAULT_BLOGS) {
+        const existingIds = new Set(querySnapshot.docs.map(d => d.id));
+        for (const blog of DEFAULT_BLOGS) {
+          if (!existingIds.has(blog.id)) {
             await setDoc(doc(db, 'blogs', blog.id), blog);
           }
-          console.log('Default blogs seeded successfully!');
         }
       } catch (err) {
         console.warn('Error auto-seeding default blogs:', err);
