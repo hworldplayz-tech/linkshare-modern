@@ -84,6 +84,8 @@ export const SEO_HASHTAGS = [
   { tag: '#BatchImageEditor', label: 'Online Image Editor', category: 'tools' },
   { tag: '#TikTokDownloader', label: 'TikTok Video Downloader', category: 'tools' },
   { tag: '#TikTokNoWatermark', label: 'TikTok Without Watermark', category: 'tools' },
+  { tag: '#InstagramDownloader', label: 'Instagram Video Downloader', category: 'tools' },
+  { tag: '#InstagramReelsDownloader', label: 'Instagram Reels MP4 & MP3 Downloader', category: 'tools' },
   { tag: '#DailyUpdatedTools', label: 'Daily Updated Tools', category: 'tools' },
   { tag: '#BestFreeTechUtilities', label: 'Best Free Tech Utilities', category: 'tools' },
   { tag: '#TopRankedWebTools', label: 'Top Ranked Web Tools', category: 'tools' },
@@ -229,6 +231,30 @@ export const TOOL_SEO_METAS: Record<string, { titlePrefix: string; titleSuffix: 
     titleSuffix: 'Target KB Pro, Zero Loss In-Browser Shrinker & ZIP Export',
     searchKeywords: 'image compressor, compress image under 100kb, compress image 50kb, bulk image resizer, webp converter, passport photo compressor, shrink photo size, online photo compressor without losing quality, batch image zip',
     description: 'Batch compress and resize JPG, PNG, WebP images online with real-time before/after split slider, target KB limits (50KB/100KB for visa/forms), dimensions resizer, EXIF cleaner, and 100% private browser processing.'
+  },
+  'instagram-reels-downloader': {
+    titlePrefix: 'Latest [DATE] Instagram Video & Reels Downloader Pro: 1080p Full HD MP4 & 320kbps MP3',
+    titleSuffix: 'Save Instagram Reels, Videos, Carousels & Audio Without Watermark Free',
+    searchKeywords: 'instagram video downloader, instagram reels downloader, download reels without watermark, save instagram reel, instagram mp3 download, ig reel audio download, instagram carousel downloader, download ig video 1080p free 2026',
+    description: 'Download Instagram Reels, Videos, Carousels, and original MP3 audio in 1080p Full HD quality without watermark for free. Fast online Instagram downloader for iPhone, Android, and PC.'
+  },
+  'instagram-downloader': {
+    titlePrefix: 'Latest [DATE] Instagram Video & Reels Downloader Pro: 1080p Full HD MP4 & 320kbps MP3',
+    titleSuffix: 'Save Instagram Reels, Videos, Carousels & Audio Without Watermark Free',
+    searchKeywords: 'instagram video downloader, instagram reels downloader, download reels without watermark, save instagram reel, instagram mp3 download, ig reel audio download, instagram carousel downloader, download ig video 1080p free 2026',
+    description: 'Download Instagram Reels, Videos, Carousels, and original MP3 audio in 1080p Full HD quality without watermark for free. Fast online Instagram downloader for iPhone, Android, and PC.'
+  },
+  'youtube-instagram-reels-downloader': {
+    titlePrefix: 'Latest [DATE] Instagram Video & Reels Downloader Pro: 1080p Full HD MP4 & 320kbps MP3',
+    titleSuffix: 'Save Instagram Reels, Videos, Carousels & Audio Without Watermark Free',
+    searchKeywords: 'instagram video downloader, instagram reels downloader, download reels without watermark, save instagram reel, instagram mp3 download, ig reel audio download, instagram carousel downloader, download ig video 1080p free 2026',
+    description: 'Download Instagram Reels, Videos, Carousels, and original MP3 audio in 1080p Full HD quality without watermark for free. Fast online Instagram downloader for iPhone, Android, and PC.'
+  },
+  'youtube-instagram-downloader': {
+    titlePrefix: 'Latest [DATE] Instagram Video & Reels Downloader Pro: 1080p Full HD MP4 & 320kbps MP3',
+    titleSuffix: 'Save Instagram Reels, Videos, Carousels & Audio Without Watermark Free',
+    searchKeywords: 'instagram video downloader, instagram reels downloader, download reels without watermark, save instagram reel, instagram mp3 download, ig reel audio download, instagram carousel downloader, download ig video 1080p free 2026',
+    description: 'Download Instagram Reels, Videos, Carousels, and original MP3 audio in 1080p Full HD quality without watermark for free. Fast online Instagram downloader for iPhone, Android, and PC.'
   }
 };
 

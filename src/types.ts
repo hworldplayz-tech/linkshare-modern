@@ -395,5 +395,14 @@ export const TOOLS: Tool[] = [
     icon: 'Minimize2',
     category: 'Utility',
     enabled: true
+  },
+  {
+    id: 'instagram-reels-downloader',
+    title: 'Instagram Video & Reels Downloader Pro',
+    slug: 'instagram-reels-downloader',
+    description: 'Download Instagram Reels, Videos, Carousels & MP3 audio in HD 1080p without watermark. 100% free, fast, and works on all devices.',
+    icon: 'Film',
+    category: 'Social',
+    enabled: true
   }
 ];

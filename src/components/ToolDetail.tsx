@@ -133,6 +133,7 @@ import { SEOBacklinkHub } from './SEOBacklinkHub';
 import { IframeGenerator } from './IframeGenerator';
 import { TikTokDownloader } from './TikTokDownloader';
 import { ImageCompressor } from './ImageCompressor';
+import { InstagramDownloader } from './InstagramDownloader';
 import { generateSoftwareSchema, getCurrentDateInfo, TOOL_SEO_METAS } from '../lib/seoHelper';
 
 interface ToolDetailProps {
@@ -5459,6 +5460,11 @@ const SourceCodeViewer = () => {
       case 'iframe-generator': return <IframeGenerator />;
       case 'tiktok-downloader': return <TikTokDownloader />;
       case 'image-compressor': return <ImageCompressor />;
+      case 'instagram-reels-downloader':
+      case 'instagram-downloader':
+      case 'youtube-instagram-reels-downloader':
+      case 'youtube-instagram-downloader':
+        return <InstagramDownloader />;
       default: return (
         <div className="bg-white rounded-[3rem] p-12 md:p-20 text-center border border-gray-100 shadow-sm">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
@@ -5479,6 +5485,28 @@ const SourceCodeViewer = () => {
   };
 
   const getToolContent = () => {
+    if (
+      tool.slug === 'instagram-reels-downloader' || 
+      tool.slug === 'instagram-downloader' || 
+      tool.slug === 'youtube-instagram-reels-downloader' || 
+      tool.slug === 'youtube-instagram-downloader'
+    ) {
+      return {
+        howToUse: [
+          "Open Instagram and find the Reel, video, or carousel post you want to download.",
+          "Tap the Share icon on Instagram and select 'Copy Link'.",
+          "Paste the Instagram link into the input field above and click 'Download'.",
+          "Choose your preferred download quality: 1080p Full HD MP4, 720p HD, extracted 320kbps MP3 audio, or high-res cover photos."
+        ],
+        benefits: [
+          "100% Watermark-Free Instagram Downloads: Clean, source-quality MP4 video exports without added logos or watermarks.",
+          "HD 1080p Video Resolution: Save crisp Reels and videos in the highest available original clarity.",
+          "Smart MP3 Audio Extractor: Pull original background songs, voiceovers, and sounds directly into 320kbps MP3 format.",
+          "Instagram Photo Carousels & Cover Art: Easily download all slides from multi-image posts and HD cover posters.",
+          "Cross-Platform Browser Compatibility: Works seamlessly on iPhone (Safari), Android (Chrome), Windows, and Mac with zero app installation."
+        ]
+      };
+    }
     if (tool.slug === 'image-compressor') {
       return {
         howToUse: [

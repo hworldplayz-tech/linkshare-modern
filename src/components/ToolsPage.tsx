@@ -54,7 +54,7 @@ export const matchToolCategory = (tool: Tool, catId: string): boolean => {
   if (catId === 'all') return true;
   if (catId === 'social') {
     return tool.category === 'Social' || 
-           ['tiktok-downloader', 'stylish-text', 'text-repeater', 'fake-whatsapp-screenshot', 
+           ['tiktok-downloader', 'youtube-instagram-downloader', 'stylish-text', 'text-repeater', 'fake-whatsapp-screenshot', 
             'whatsapp-read-more', 'whatsapp-link-generator', 'whatsapp-dp-border', 
             'whatsapp-group-name-generator', 'whatsapp-status-formatter'].includes(tool.id);
   }

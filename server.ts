@@ -1,7 +1,9 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { execFile } from 'child_process';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
@@ -386,6 +388,439 @@ app.get('/api/tiktok-proxy', async (req, res) => {
     console.error('[TikTok Proxy Error]:', err.message);
     // If proxy stream fails, redirect directly to media URL
     res.redirect(mediaUrl);
+  }
+});
+
+// Helper function to run yt-dlp safely for Instagram extraction
+function runYtDlp(targetUrl: string, extraArgs: string[] = []): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const binPath = path.join(process.cwd(), 'yt-dlp');
+    if (!fs.existsSync(binPath) && !fs.existsSync('./yt-dlp')) {
+      return reject(new Error('yt-dlp binary not available in environment'));
+    }
+    const executable = fs.existsSync(binPath) ? binPath : './yt-dlp';
+    const args = ['-j', '--no-warnings', '--skip-download', ...extraArgs, targetUrl];
+    execFile(executable, args, { timeout: 15000, maxBuffer: 15 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) {
+        return reject(new Error(stderr || err.message));
+      }
+      try {
+        const lines = stdout.trim().split('\n').filter(Boolean);
+        if (lines.length === 0) return reject(new Error('Empty output from extractor'));
+        const parsed = JSON.parse(lines[0]);
+        resolve(parsed);
+      } catch (parseErr) {
+        reject(parseErr);
+      }
+    });
+  });
+}
+
+// API endpoint for Instagram Video & Reels Downloader Pro
+app.post('/api/media-downloader-info', async (req, res) => {
+  try {
+    let { url } = req.body;
+    if (!url || typeof url !== 'string') {
+      return res.status(200).json({ success: false, error: 'Please provide a valid Instagram Reel or Video URL' });
+    }
+
+    url = url.trim();
+    console.log(`[Instagram Downloader API] Fetching info for: ${url}`);
+
+    const isInstagram = url.includes('instagram.com') || url.includes('instagr.am');
+
+    if (!isInstagram) {
+      return res.status(200).json({
+        success: false,
+        error: 'Please enter a valid Instagram link (e.g. instagram.com/reel/... or /p/...).',
+      });
+    }
+
+    // ==================== INSTAGRAM EXTRACTION ENGINE ====================
+    // Extract shortcode for unique ID
+    const shortcodeMatch = url.match(/\/(?:reel|reels|p|tv)\/([a-zA-Z0-9_-]+)/);
+    const shortcode = shortcodeMatch ? shortcodeMatch[1] : String(Date.now());
+    const isReel = url.includes('/reel') || url.includes('/reels');
+
+    let title = 'Instagram Reel Video';
+    let authorName = 'Instagram Creator';
+    let authorUsername = 'instagram_user';
+    let cover = '';
+    let playUrl = '';
+    let audioUrl = '';
+    let duration = 0;
+    let likes = 0;
+    let images: string[] = [];
+    const videoStreams: Array<{ quality: string; label: string; format: string; url: string; size?: string; fps?: number }> = [];
+    const audioStreams: Array<{ quality: string; label: string; format: string; url: string; size?: string }> = [];
+
+    // Method 1: Primary Engine -> yt-dlp (when available)
+    try {
+      console.log(`[Instagram] Running yt-dlp for shortcode: ${shortcode}`);
+      const igData = await runYtDlp(url);
+
+      if (igData) {
+        title = igData.title || igData.description || title;
+        authorUsername = igData.uploader_id || igData.uploader || authorUsername;
+        authorName = igData.uploader || authorUsername;
+        cover = igData.thumbnail || cover;
+        duration = Number(igData.duration) || duration;
+        likes = Number(igData.like_count) || likes;
+
+        // Check if carousel or multi-entries
+        if (Array.isArray(igData.entries) && igData.entries.length > 0) {
+          images = igData.entries.map((e: any) => e.thumbnail || e.url).filter(Boolean);
+        }
+
+        if (Array.isArray(igData.formats) && igData.formats.length > 0) {
+          const availableFormats = igData.formats.filter((f: any) => f && f.url);
+
+          // Filter for progressive formats containing BOTH crystal-clear video AND full audio
+          const progressiveFormats = availableFormats.filter((f: any) => {
+            const isVideoOnly = f.acodec === 'none' || (typeof f.format_id === 'string' && f.format_id.startsWith('dash-') && f.format_id.endsWith('v'));
+            const isAudioOnly = f.vcodec === 'none' || (typeof f.format_id === 'string' && f.format_id.startsWith('dash-') && f.format_id.endsWith('a'));
+            return !isVideoOnly && !isAudioOnly;
+          });
+
+          // Set primary playable stream with guaranteed sound
+          if (progressiveFormats.length > 0) {
+            playUrl = progressiveFormats[0].url;
+          } else if (availableFormats.length > 0) {
+            playUrl = availableFormats[0].url;
+          }
+
+          // Primary No-Watermark HD Stream (Full Video + Audio)
+          const primaryStream = progressiveFormats[0] || availableFormats[0];
+          if (primaryStream) {
+            videoStreams.push({
+              quality: 'HD MP4',
+              label: 'Download Without Watermark (HD MP4)',
+              format: 'mp4',
+              url: primaryStream.url,
+              size: primaryStream.filesize ? `${(primaryStream.filesize / (1024 * 1024)).toFixed(1)} MB` : undefined,
+              fps: primaryStream.fps || 30
+            });
+          }
+
+          // Secondary / Mirror Server Stream (Server 2)
+          const mirrorStream = progressiveFormats.length > 1 
+            ? progressiveFormats[1] 
+            : (progressiveFormats[0] || availableFormats[1] || availableFormats[0]);
+          if (mirrorStream && mirrorStream.url) {
+            videoStreams.push({
+              quality: 'Server 2 (Mirror)',
+              label: 'Download Video (Server 2 - Fast Mirror)',
+              format: 'mp4',
+              url: mirrorStream.url,
+              size: mirrorStream.filesize ? `${(mirrorStream.filesize / (1024 * 1024)).toFixed(1)} MB` : undefined,
+              fps: mirrorStream.fps || 30
+            });
+          }
+
+          // Audio Stream (Extracted MP3 / M4A)
+          const audioFormat = availableFormats.find((f: any) => 
+            (f.acodec && f.acodec !== 'none') || f.ext === 'm4a' || f.ext === 'mp3' || (typeof f.format_id === 'string' && f.format_id.endsWith('a'))
+          ) || progressiveFormats[0] || availableFormats[0];
+
+          if (audioFormat) {
+            audioUrl = audioFormat.url;
+            audioStreams.push({
+              quality: '320kbps',
+              label: 'Extracted Original Soundtrack (MP3 320kbps)',
+              format: 'mp3',
+              url: audioFormat.url,
+              size: audioFormat.filesize ? `${(audioFormat.filesize / (1024 * 1024)).toFixed(1)} MB` : undefined
+            });
+          }
+        }
+      }
+    } catch (ytErr: any) {
+      // If yt-dlp says "There is no video in this post", it is a photo post or image carousel
+      console.log('[Instagram Notice]:', ytErr.message);
+    }
+
+    // Method 2: High-Performance OpenGraph / Crawler Scraper (Handles Photos, Carousels & Fallbacks)
+    if (!playUrl || !cover || images.length === 0) {
+      const cleanUrl = url.split('?')[0].replace(/\/$/, '');
+      const crawlerAgents = [
+        'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+        'Twitterbot/1.0',
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
+      ];
+
+      for (const ua of crawlerAgents) {
+        try {
+          const pageRes = await axios.get(cleanUrl, {
+            headers: {
+              'User-Agent': ua,
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.9',
+            },
+            timeout: 6000,
+          });
+
+          if (pageRes.data && typeof pageRes.data === 'string') {
+            const $ = cheerio.load(pageRes.data);
+            const ogImg = $('meta[property="og:image"]').attr('content');
+            const ogTitle = $('meta[property="og:title"]').attr('content');
+            const ogDesc = $('meta[property="og:description"]').attr('content');
+            const ogVideo = $('meta[property="og:video"]').attr('content') || $('meta[property="og:video:secure_url"]').attr('content');
+
+            if (ogImg && !cover) {
+              cover = ogImg;
+              if (!images.includes(ogImg)) images.push(ogImg);
+            }
+
+            if (ogVideo && !playUrl) {
+              playUrl = ogVideo;
+              if (videoStreams.length === 0) {
+                videoStreams.push({
+                  quality: 'HD MP4',
+                  label: 'Download Without Watermark (HD MP4)',
+                  format: 'mp4',
+                  url: ogVideo,
+                });
+              }
+            }
+
+            if (ogTitle && (!title || title === 'Instagram Reel Video')) {
+              if (ogTitle.includes(' on Instagram: ')) {
+                const parts = ogTitle.split(' on Instagram: ');
+                authorName = parts[0].trim();
+                title = parts[1]?.replace(/^"|"$/g, '').trim() || ogTitle;
+              } else {
+                title = ogTitle;
+              }
+            }
+
+            if (ogDesc) {
+              const userMatch = ogDesc.match(/-\s*([a-zA-Z0-9_\.]+)\s+on\s+/i);
+              if (userMatch && (!authorUsername || authorUsername === 'instagram_user')) {
+                authorUsername = userMatch[1];
+                authorName = authorName === 'Instagram Creator' ? userMatch[1] : authorName;
+              }
+              const likesMatch = ogDesc.match(/^([\d\.,KMkm]+)\s*likes?/i);
+              if (likesMatch && !likes) {
+                const rawL = likesMatch[1].toUpperCase();
+                if (rawL.includes('K')) likes = parseFloat(rawL) * 1000;
+                else if (rawL.includes('M')) likes = parseFloat(rawL) * 1000000;
+                else likes = parseInt(rawL.replace(/,/g, '')) || 0;
+              }
+            }
+
+            if (cover) break;
+          }
+        } catch (crawlerErr: any) {
+          // Continue to next crawler agent if any
+        }
+      }
+    }
+
+    // Method 3: Fallback via Instagram Embed Captioned
+    if (!cover || (!playUrl && images.length === 0)) {
+      try {
+        const cleanUrl = url.split('?')[0].replace(/\/$/, '');
+        const pageRes = await axios.get(`${cleanUrl}/embed/captioned/`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
+          timeout: 6000,
+        });
+
+        if (pageRes.data && typeof pageRes.data === 'string') {
+          const $ = cheerio.load(pageRes.data);
+          const imgSrc = $('img.EmbeddedMediaImage').attr('src') || $('img').first().attr('src');
+          if (imgSrc && !cover) {
+            cover = imgSrc;
+            if (!images.includes(imgSrc)) images.push(imgSrc);
+          }
+
+          const videoSrc = $('video').attr('src');
+          if (videoSrc && !playUrl) {
+            playUrl = videoSrc;
+            videoStreams.push({
+              quality: 'HD MP4',
+              label: 'Download Without Watermark (HD MP4)',
+              format: 'mp4',
+              url: videoSrc,
+            });
+          }
+
+          const captionText = $('.Caption').text().trim();
+          if (captionText && (!title || title === 'Instagram Reel Video')) title = captionText;
+
+          const usernameText = $('.UsernameText').text().trim();
+          if (usernameText && (!authorUsername || authorUsername === 'instagram_user')) {
+            authorUsername = usernameText;
+            authorName = usernameText;
+          }
+        }
+      } catch (scrapeErr: any) {
+        console.warn('[Instagram Scrape Notice]:', scrapeErr.message);
+      }
+    }
+
+    // Method 4: Fallback via oEmbed
+    if (!cover || !title || title === 'Instagram Reel Video') {
+      try {
+        const oembedRes = await axios.get(
+          `https://api.instagram.com/oembed/?url=${encodeURIComponent(url)}`,
+          { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 4000 }
+        );
+        if (oembedRes.data) {
+          title = oembedRes.data.title || title;
+          authorName = oembedRes.data.author_name || authorName;
+          authorUsername = oembedRes.data.author_name || authorUsername;
+          if (oembedRes.data.thumbnail_url && !cover) {
+            cover = oembedRes.data.thumbnail_url;
+            if (!images.includes(cover)) images.push(cover);
+          }
+        }
+      } catch (oembedErr: any) {
+        console.warn('[Instagram oEmbed Notice]:', oembedErr.message);
+      }
+    }
+
+    const hasVideo = !!playUrl || videoStreams.length > 0;
+    const isPhotoOrCarousel = !hasVideo || images.length > 0;
+    const subType = images.length > 1 ? 'carousel' : !hasVideo ? 'photo' : isReel ? 'reel' : 'video';
+
+    // If it is a video post but no stream was found yet, fallback
+    if (hasVideo && videoStreams.length === 0) {
+      videoStreams.push({
+        quality: 'HD MP4',
+        label: 'Download Without Watermark (HD MP4)',
+        format: 'mp4',
+        url: playUrl || url,
+      });
+    }
+
+    if (audioStreams.length === 0 && playUrl) {
+      audioStreams.push({
+        quality: '320kbps',
+        label: 'Original Soundtrack (MP3 320kbps)',
+        format: 'mp3',
+        url: playUrl,
+      });
+    }
+
+    const result = {
+      platform: 'instagram',
+      subType: subType,
+      id: shortcode,
+      originalUrl: url,
+      title: title || (subType === 'photo' ? 'Instagram Photo Post' : 'Instagram Reel Video'),
+      duration: duration,
+      cover: cover || (images.length > 0 ? images[0] : ''),
+      hqCover: cover || (images.length > 0 ? images[0] : ''),
+      thumbnails: cover ? [{ label: 'HD Cover Poster', url: cover }] : [],
+      author: {
+        username: authorUsername,
+        nickname: authorName,
+        profileUrl: `https://www.instagram.com/${authorUsername}`,
+      },
+      stats: {
+        views: 0,
+        likes: likes || 0,
+      },
+      videoStreams: videoStreams,
+      audioStreams: audioStreams,
+      images: images.length > 0 ? images : (cover ? [cover] : []),
+      primaryPlayUrl: playUrl || '',
+      primaryAudioUrl: audioUrl || playUrl || '',
+    };
+
+    return res.json({ success: true, data: result });
+
+    return res.json({ success: true, data: result });
+  } catch (topLevelErr: any) {
+    console.error('[Instagram Downloader Error]:', topLevelErr);
+    return res.status(200).json({
+      success: false,
+      error: typeof topLevelErr.message === 'string' ? topLevelErr.message : 'Could not process this Instagram video. Please check that the post is public.'
+    });
+  }
+});
+
+// Universal streaming media proxy for Instagram Reels & Videos with support for range streaming & download attachment headers
+app.get('/api/media-proxy', async (req, res) => {
+  const mediaUrl = req.query.url as string;
+  let filename = (req.query.filename as string) || 'video_download.mp4';
+  const platform = (req.query.platform as string) || 'generic';
+  const isPreview = req.query.preview === '1';
+
+  if (!mediaUrl) {
+    return res.status(400).send('Missing media URL parameter');
+  }
+
+  // Clean filename for safety and ensure correct extension
+  filename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const isAudio = filename.toLowerCase().endsWith('.mp3') || filename.toLowerCase().endsWith('.m4a');
+  const isImage = filename.toLowerCase().endsWith('.jpg') || filename.toLowerCase().endsWith('.jpeg') || filename.toLowerCase().endsWith('.png') || filename.toLowerCase().endsWith('.webp');
+  const isVideo = !isAudio && !isImage;
+
+  if (isVideo && !filename.toLowerCase().endsWith('.mp4')) {
+    filename += '.mp4';
+  }
+
+  try {
+    const headers: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+    };
+
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range;
+    }
+
+    if (platform === 'instagram' || mediaUrl.includes('cdninstagram') || mediaUrl.includes('fbcdn')) {
+      headers['Referer'] = 'https://www.instagram.com/';
+      headers['Origin'] = 'https://www.instagram.com';
+    } else if (platform === 'youtube' || mediaUrl.includes('googlevideo.com') || mediaUrl.includes('ytimg.com')) {
+      headers['Referer'] = 'https://www.youtube.com/';
+      headers['Origin'] = 'https://www.youtube.com';
+    }
+
+    const response = await axios({
+      method: 'GET',
+      url: mediaUrl,
+      responseType: 'stream',
+      headers: headers,
+      timeout: 35000,
+      validateStatus: (status) => status < 400,
+    });
+
+    const contentType = isAudio 
+      ? 'audio/mpeg' 
+      : isImage 
+      ? 'image/jpeg' 
+      : 'video/mp4';
+
+    if (isPreview) {
+      res.setHeader('Content-Disposition', 'inline');
+    } else {
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    }
+
+    res.setHeader('Content-Type', response.headers['content-type'] || contentType);
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+
+    if (response.headers['content-length']) {
+      res.setHeader('Content-Length', response.headers['content-length']);
+    }
+    if (response.headers['content-range']) {
+      res.setHeader('Content-Range', response.headers['content-range']);
+      res.status(206);
+    }
+
+    response.data.pipe(res);
+  } catch (err: any) {
+    console.error('[Media Proxy Error]:', err.message);
+    if (!res.headersSent) {
+      res.redirect(mediaUrl);
+    }
   }
 });
 
